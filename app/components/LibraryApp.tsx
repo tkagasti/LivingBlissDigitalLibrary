@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { chapters, collections, libraryItems, questions } from "../lib-data";
 
@@ -48,11 +49,14 @@ const navItems = [
 function Brand() {
   return (
     <Link className="brand" href="/" aria-label="Living Bliss Digital Library home">
-      <span className="brand-mark" aria-hidden="true">ॐ</span>
-      <span>
-        <strong>Living Bliss</strong>
-        <small>Digital Library</small>
-      </span>
+      <Image
+        className="brand-logo"
+        src="/living-bliss-logo-2026.png"
+        alt="Living Bliss — Awakening Inner Bliss"
+        width={1881}
+        height={836}
+        priority
+      />
     </Link>
   );
 }
@@ -497,7 +501,7 @@ function CertificateView({ learner }: { learner: Learner }) {
   return (
     <main className="page-main certificate-page">
       <section className="certificate-toolbar page-shell"><div><span className="eyebrow">Verified achievement</span><h1>Your certificate is ready</h1><p>Download the print-quality vector certificate or print this page as a PDF.</p></div><div><button className="button secondary" onClick={() => window.print()}>Print / Save PDF</button><button className="button primary" onClick={download}>Download certificate</button></div></section>
-      <section className="certificate-wrap page-shell"><article className="certificate"><div className="certificate-inner"><div className="certificate-brand"><span>ॐ</span><strong>Living Bliss Digital Library</strong></div><span className="eyebrow">Certificate of achievement</span><h2>This certificate is awarded to</h2><h3>{learner.displayName}</h3><p>for successfully completing the assessed chapter</p><h4>Sāṅkhya Yoga Explorer</h4><p>Bhagavad Gita: Foundations</p><div className="certificate-score"><strong>{learner.assessmentScore}%</strong><span>Verified score · Pass mark 60%</span></div><div className="certificate-details"><div><span>Issue date</span><strong>{issueDate}</strong></div><div><span>Certificate ID</span><strong>{certificateId}</strong></div><div><span>Status</span><strong>Valid</strong></div></div><div className="certificate-sign"><div><span>Living Bliss</span><small>Issuing authority</small></div><div className="verify-mark"><span>✓</span><small>Publicly verifiable</small></div></div></div></article><aside><div className="side-card"><span className="verified">Valid credential</span><h2>Achievement details</h2><dl><div><dt>Learner</dt><dd>{learner.displayName}</dd></div><div><dt>Course</dt><dd>Bhagavad Gita: Foundations</dd></div><div><dt>Achievement</dt><dd>Sāṅkhya Yoga Explorer</dd></div><div><dt>Verified score</dt><dd>{learner.assessmentScore}%</dd></div><div><dt>Content version</dt><dd>GITA-FND-1.0</dd></div></dl><a href="/dashboard">Return to dashboard →</a></div></aside></section>
+      <section className="certificate-wrap page-shell"><article className="certificate"><div className="certificate-inner"><div className="certificate-brand"><Image src="/living-bliss-logo-2026.png" alt="Living Bliss — Awakening Inner Bliss" width={1881} height={836} /></div><span className="eyebrow">Certificate of achievement</span><h2>This certificate is awarded to</h2><h3>{learner.displayName}</h3><p>for successfully completing the assessed chapter</p><h4>Sāṅkhya Yoga Explorer</h4><p>Bhagavad Gita: Foundations</p><div className="certificate-score"><strong>{learner.assessmentScore}%</strong><span>Verified score · Pass mark 60%</span></div><div className="certificate-details"><div><span>Issue date</span><strong>{issueDate}</strong></div><div><span>Certificate ID</span><strong>{certificateId}</strong></div><div><span>Status</span><strong>Valid</strong></div></div><div className="certificate-sign"><div><span>Living Bliss</span><small>Issuing authority</small></div><div className="verify-mark"><span>✓</span><small>Publicly verifiable</small></div></div></div></article><aside><div className="side-card"><span className="verified">Valid credential</span><h2>Achievement details</h2><dl><div><dt>Learner</dt><dd>{learner.displayName}</dd></div><div><dt>Course</dt><dd>Bhagavad Gita: Foundations</dd></div><div><dt>Achievement</dt><dd>Sāṅkhya Yoga Explorer</dd></div><div><dt>Verified score</dt><dd>{learner.assessmentScore}%</dd></div><div><dt>Content version</dt><dd>GITA-FND-1.0</dd></div></dl><a href="/dashboard">Return to dashboard →</a></div></aside></section>
     </main>
   );
 }
