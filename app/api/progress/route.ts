@@ -1,5 +1,3 @@
-import { env } from "cloudflare:workers";
-
 type ProgressPayload = {
   action?: "profile" | "completeLesson" | "assessment" | "reset";
   displayName?: string;
@@ -36,9 +34,18 @@ function withCookie(payload: unknown, id: string, isNew: boolean, status = 200) 
   return new Response(JSON.stringify(payload), { status, headers });
 }
 
+// Deferred so plain-Node contexts (e.g. the dev-preview smoke test, which
+// loads the built worker bundle directly without workerd) can import this
+// module without eagerly resolving the `cloudflare:` URL scheme.
+async function getDB() {
+  const { env } = await import("cloudflare:workers");
+  return env.DB;
+}
+
 async function ensureLearner(id: string) {
   const now = new Date().toISOString();
-  await env.DB.prepare(
+  const db = await getDB();
+  await db.prepare(
     `INSERT OR IGNORE INTO learner_states
       (id, display_name, preferred_language, learning_mode, completed_lessons, assessment_score, assessment_passed, member_joined, updated_at)
      VALUES (?, 'Seeker', 'English', 'Mixed learning', '[]', NULL, 0, 0, ?)`,
@@ -48,7 +55,8 @@ async function ensureLearner(id: string) {
 }
 
 async function readLearner(id: string) {
-  const row = await env.DB.prepare(
+  const db = await getDB();
+  const row = await db.prepare(
     `SELECT id, display_name, preferred_language, learning_mode, completed_lessons,
             assessment_score, assessment_passed, member_joined, updated_at
        FROM learner_states WHERE id = ?`,
@@ -87,13 +95,14 @@ export async function POST(request: Request) {
     const { id, isNew } = visitor(request);
     const payload = (await request.json()) as ProgressPayload;
     await ensureLearner(id);
+    const db = await getDB();
     const now = new Date().toISOString();
 
     if (payload.action === "profile") {
       const name = payload.displayName?.trim().slice(0, 80) || "Seeker";
       const language = payload.preferredLanguage?.trim().slice(0, 30) || "English";
       const mode = payload.learningMode?.trim().slice(0, 30) || "Mixed learning";
-      await env.DB.prepare(
+      await db.prepare(
         "UPDATE learner_states SET display_name = ?, preferred_language = ?, learning_mode = ?, member_joined = 1, updated_at = ? WHERE id = ?",
       )
         .bind(name, language, mode, now, id)
@@ -103,20 +112,20 @@ export async function POST(request: Request) {
       const completed = Array.from(
         new Set([...current.completedLessons, payload.lessonId]),
       ).slice(0, 200);
-      await env.DB.prepare(
+      await db.prepare(
         "UPDATE learner_states SET completed_lessons = ?, updated_at = ? WHERE id = ?",
       )
         .bind(JSON.stringify(completed), now, id)
         .run();
     } else if (payload.action === "assessment") {
       const score = Math.max(0, Math.min(100, Math.round(Number(payload.score) || 0)));
-      await env.DB.prepare(
+      await db.prepare(
         "UPDATE learner_states SET assessment_score = ?, assessment_passed = ?, updated_at = ? WHERE id = ?",
       )
         .bind(score, score >= 60 ? 1 : 0, now, id)
         .run();
     } else if (payload.action === "reset") {
-      await env.DB.prepare(
+      await db.prepare(
         "UPDATE learner_states SET completed_lessons = '[]', assessment_score = NULL, assessment_passed = 0, updated_at = ? WHERE id = ?",
       )
         .bind(now, id)
