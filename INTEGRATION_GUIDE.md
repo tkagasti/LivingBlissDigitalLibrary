@@ -8,7 +8,7 @@ This package contains the complete source used for the Living Bliss Digital Libr
 - Jagannatha Dham–first collection structure
 - Bhagavad Gita course, lesson and assessment routes
 - Free learning membership interface
-- Persistent progress model and D1 database migration
+- Persistent progress model and MySQL database migration
 - Dashboard, achievements and downloadable certificate
 - Responsive and accessible desktop, tablet and mobile styling
 - Production images and social preview card
@@ -30,12 +30,20 @@ This package contains the complete source used for the Living Bliss Digital Libr
 
 1. Install Node.js 22 or a compatible current version.
 2. Run `npm ci` from this directory.
-3. Configure a Cloudflare D1 database binding named `DB`, or replace the progress API with the database used by your existing website.
-4. Apply the SQL migration in `drizzle/0000_sleepy_thing.sql`.
+3. Copy `.env.example` to `.env.local` and enter your local MySQL credentials.
+4. Apply the SQL migration in `database/queries/001_create_learner_states.sql`.
 5. Run `npm run dev` for local development.
 6. Run `npm run lint` and `npm run build` before deployment.
 
-The sanitized `.openai/hosting.example.json` shows the required Sites bindings. Create your own deployment configuration rather than reusing another site’s project identifier.
+## Hostinger deployment
+
+1. In hPanel, create a MySQL database and database user. Keep the generated database name, username and password.
+2. Open phpMyAdmin for that database and import `database/queries/001_create_learner_states.sql`.
+3. Create a Node.js application for this project. Use `npm run build` as the build command and `npm start` as the start command.
+4. Add `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CONNECTION_LIMIT` and `DB_SSL` as application environment variables, using `.env.example` as the template.
+5. Keep `DB_PASSWORD` in hPanel only. Never commit or upload a populated `.env.local` file.
+
+When the website and database are in the same Hostinger account/server, use the database hostname shown in hPanel (often `localhost`) and leave `DB_SSL=false`. If they are on different servers, allow the web server's IP under Remote MySQL and use the hostname Hostinger supplies.
 
 ## Recommended Living Bliss integration
 
@@ -59,7 +67,7 @@ Deploy it as a separate application behind the existing domain. Configure the ho
 
 ## Data model
 
-The demonstration uses `learner_states` for a browser-linked learner profile, completed lessons and assessment status. For public production, associate progress with the authenticated Living Bliss member ID and retain version references for lessons, assessments and certificates.
+The current implementation uses `learner_states` for a browser-linked learner profile, completed lessons and assessment status. The identifier is stored in a secure, HTTP-only, same-site cookie. For public production, associate progress with an authenticated Living Bliss member ID and retain version references for lessons, assessments and certificates. A browser cookie alone is convenient progress persistence, not a full login system.
 
 ## Important content principle
 
