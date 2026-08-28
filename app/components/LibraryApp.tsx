@@ -61,7 +61,7 @@ function Brand() {
   );
 }
 
-function Header({ view, learner, onJoin }: { view: View; learner: Learner; onJoin: () => void }) {
+function Header({ view, learner, authenticated, onJoin }: { view: View; learner: Learner; authenticated: boolean; onJoin: () => void }) {
   return (
     <header className="site-header">
       <div className="header-inner">
@@ -75,14 +75,14 @@ function Header({ view, learner, onJoin }: { view: View; learner: Learner; onJoi
           <a href="https://livingbliss.org/" className="main-site-link">Main site ↗</a>
         </nav>
         <div className="header-actions">
-          {learner.memberJoined ? (
+          {authenticated ? (
             <a className="profile-button" href="/dashboard" aria-label={`Open ${learner.displayName}'s learning dashboard`}>
               <span>{learner.displayName.slice(0, 1).toUpperCase()}</span>
               <b>My learning</b>
             </a>
           ) : (
             <>
-              <button className="button ghost small" onClick={onJoin}>Sign in</button>
+              <a className="button ghost small" href="/sign-in">Sign in</a>
               <button className="button primary small" onClick={onJoin}>Join free</button>
             </>
           )}
@@ -91,6 +91,7 @@ function Header({ view, learner, onJoin }: { view: View; learner: Learner; onJoi
             <nav aria-label="Mobile navigation">
               {navItems.map((item) => <a key={item.label} href={item.href}>{item.label}</a>)}
               <a href="/dashboard">My learning</a>
+              <a href="/account">Account</a>
               <a href="https://livingbliss.org/">Main Living Bliss site ↗</a>
             </nav>
           </details>
@@ -132,69 +133,6 @@ function Footer() {
         <span>ॐ श्री गुरुभ्यो नमः · ॐ श्री परमात्मने नमः</span>
       </div>
     </footer>
-  );
-}
-
-function JoinDialog({ open, learner, onClose, onSubmit, saving }: {
-  open: boolean;
-  learner: Learner;
-  onClose: () => void;
-  onSubmit: (payload: Record<string, string>) => Promise<void>;
-  saving: boolean;
-}) {
-  const [name, setName] = useState(learner.memberJoined ? learner.displayName : "");
-  const [language, setLanguage] = useState(learner.preferredLanguage);
-  const [mode, setMode] = useState(learner.learningMode);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: KeyboardEvent) => event.key === "Escape" && onClose();
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    await onSubmit({ displayName: name, preferredLanguage: language, learningMode: mode });
-  };
-
-  return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <section className="join-dialog" role="dialog" aria-modal="true" aria-labelledby="join-title">
-        <button className="modal-close" onClick={onClose} aria-label="Close registration">×</button>
-        <span className="eyebrow">Free learning membership</span>
-        <h2 id="join-title">Begin with a path that suits you</h2>
-        <p>No payment is required. Your preferences, progress, assessments and achievements stay together on this device.</p>
-        <form onSubmit={submit}>
-          <label>
-            Display name
-            <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Your name" autoFocus />
-          </label>
-          <div className="form-grid">
-            <label>
-              Preferred language
-              <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                <option>English</option><option>Odia</option><option>Hindi</option><option>Sanskrit</option>
-              </select>
-            </label>
-            <label>
-              Learning format
-              <select value={mode} onChange={(e) => setMode(e.target.value)}>
-                <option>Mixed learning</option><option>Video first</option><option>Slides first</option><option>Text and audio</option>
-              </select>
-            </label>
-          </div>
-          <label className="consent-row">
-            <input type="checkbox" required />
-            <span>I agree to the learning terms and privacy notice. Community emails remain optional.</span>
-          </label>
-          <button className="button primary wide" type="submit" disabled={saving}>{saving ? "Creating your membership…" : "Create free membership"}</button>
-          <small className="privacy-note">Living Bliss does not ask for caste, nationality, gender or religious identity.</small>
-        </form>
-      </section>
-    </div>
   );
 }
 
@@ -508,14 +446,17 @@ function CertificateView({ learner }: { learner: Learner }) {
 
 export default function LibraryApp({ view, initialSearch = "" }: { view: View; initialSearch?: string }) {
   const [learner, setLearner] = useState<Learner>(initialLearner);
-  const [joinOpen, setJoinOpen] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     fetch("/api/progress")
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => data.learner && setLearner(data.learner))
+      .then((data) => {
+        setAuthenticated(Boolean(data.authenticated));
+        if (data.learner) setLearner(data.learner);
+      })
       .catch(() => setNotice("Progress will reconnect automatically when the service is available."));
   }, []);
 
@@ -525,6 +466,10 @@ export default function LibraryApp({ view, initialSearch = "" }: { view: View; i
     try {
       const response = await fetch("/api/progress", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       const data = await response.json();
+      if (response.status === 401) {
+        window.location.href = `/sign-in?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return;
+      }
       if (!response.ok) throw new Error(data.error);
       setLearner(data.learner);
       setNotice("Your progress has been saved.");
@@ -533,27 +478,28 @@ export default function LibraryApp({ view, initialSearch = "" }: { view: View; i
     } finally { setSaving(false); }
   };
 
-  const join = async (payload: Record<string, string>) => {
-    await save({ action: "profile", ...payload });
-    setJoinOpen(false);
+  const join = () => {
+    const returnTo = window.location.pathname + window.location.search;
+    window.location.href = authenticated
+      ? `/onboarding?returnTo=${encodeURIComponent(returnTo)}`
+      : `/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
   };
 
   return (
     <div className="site-root">
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Header view={view} learner={learner} onJoin={() => setJoinOpen(true)} />
+      <Header view={view} learner={learner} authenticated={authenticated} onJoin={join} />
       <div id="main-content">
-        {view === "home" && <HomeView learner={learner} onJoin={() => setJoinOpen(true)} />}
+        {view === "home" && <HomeView learner={learner} onJoin={join} />}
         {view === "library" && <LibraryView initialSearch={initialSearch} />}
-        {view === "course" && <CourseView learner={learner} onJoin={() => setJoinOpen(true)} />}
-        {view === "lesson" && <LessonView learner={learner} save={save} saving={saving} onJoin={() => setJoinOpen(true)} />}
-        {view === "assessment" && <AssessmentView learner={learner} save={save} saving={saving} onJoin={() => setJoinOpen(true)} />}
-        {view === "dashboard" && <DashboardView learner={learner} onJoin={() => setJoinOpen(true)} />}
-        {view === "membership" && <MembershipView learner={learner} onJoin={() => setJoinOpen(true)} />}
+        {view === "course" && <CourseView learner={learner} onJoin={join} />}
+        {view === "lesson" && <LessonView learner={learner} save={save} saving={saving} onJoin={join} />}
+        {view === "assessment" && <AssessmentView learner={learner} save={save} saving={saving} onJoin={join} />}
+        {view === "dashboard" && <DashboardView learner={learner} onJoin={join} />}
+        {view === "membership" && <MembershipView learner={learner} onJoin={join} />}
         {view === "certificate" && <CertificateView learner={learner} />}
       </div>
       <Footer />
-      <JoinDialog open={joinOpen} learner={learner} onClose={() => setJoinOpen(false)} onSubmit={join} saving={saving} />
       {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss notification">×</button></div>}
     </div>
   );

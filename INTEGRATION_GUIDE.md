@@ -8,7 +8,8 @@ This package contains the complete source used for the Living Bliss Digital Libr
 - Jagannatha Dham–first collection structure
 - Bhagavad Gita course, lesson and assessment routes
 - Free learning membership interface
-- Persistent progress model and MySQL database migration
+- Authenticated cross-device progress model and MySQL database migrations
+- Google, Microsoft, password and email-code sign-in
 - Dashboard, achievements and downloadable certificate
 - Responsive and accessible desktop, tablet and mobile styling
 - Production images and social preview card
@@ -25,23 +26,28 @@ This package contains the complete source used for the Living Bliss Digital Libr
 | `/dashboard` | Learner progress and achievements |
 | `/membership` | Guest, free learner and supporter options |
 | `/certificate` | Achievement certificate preview/download |
+| `/sign-in` | Account creation, password, OTP, Google and Microsoft sign-in |
+| `/onboarding` | Authenticated learner preferences |
+| `/account` | Profile, connected providers, password and session security |
 
 ## Local setup
 
 1. Install Node.js 22 or a compatible current version.
 2. Run `npm ci` from this directory.
 3. Copy `.env.example` to `.env.local` and enter your local MySQL credentials.
-4. Apply the SQL migration in `database/queries/001_create_learner_states.sql`.
-5. Run `npm run dev` for local development.
-6. Run `npm run lint` and `npm run build` before deployment.
+4. Apply `database/queries/001_create_learner_states.sql`, then `database/queries/002_create_authentication.sql`.
+5. Add the database, authentication, OAuth and SMTP values from `.env.example`.
+6. Run `npm run dev` for local development.
+7. Run `npm run test:unit`, `npm run lint` and `npm run build` before deployment.
 
 ## Hostinger deployment
 
 1. In hPanel, create a MySQL database and database user. Keep the generated database name, username and password.
-2. Open phpMyAdmin for that database and import `database/queries/001_create_learner_states.sql`.
+2. Back up any existing database, then import `database/queries/001_create_learner_states.sql` followed by `database/queries/002_create_authentication.sql`. The second migration intentionally clears anonymous prototype progress.
 3. Create a Node.js application for this project. Use `npm run build` as the build command and `npm start` as the start command.
-4. Add `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_CONNECTION_LIMIT` and `DB_SSL` as application environment variables, using `.env.example` as the template.
+4. Add every database and authentication variable from `.env.example` in hPanel. Use independent high-entropy values for `AUTH_OTP_SECRET` and `AUTH_ENCRYPTION_SECRET`.
 5. Keep `DB_PASSWORD` in hPanel only. Never commit or upload a populated `.env.local` file.
+6. Schedule `npm run auth:cleanup` daily using Hostinger cron.
 
 When the website and database are in the same Hostinger account/server, use the database hostname shown in hPanel (often `localhost`) and leave `DB_SSL=false`. If they are on different servers, allow the web server's IP under Remote MySQL and use the hostname Hostinger supplies.
 
@@ -58,16 +64,44 @@ Deploy it as a separate application behind the existing domain. Configure the ho
 ## Production items to replace or connect
 
 - Replace the temporary Om text mark with the approved Living Bliss logo asset.
-- Connect registration to the approved identity provider and email-verification process.
+- Register the production Google and Microsoft OAuth applications and verify Hostinger SMTP delivery.
 - Connect supporter membership to an approved PCI-compliant payment provider.
 - Replace demonstration scripture/course records with editorially approved content and media.
 - Connect video streaming, captions, transcripts and slide files.
 - Configure certificate verification URLs and authorised issue/revocation workflow.
 - Review privacy, consent, retention, accessibility and security requirements before public launch.
 
+## Authentication setup
+
+### Google
+
+Create a Google Cloud OAuth 2.0 Web application, configure the public consent screen and add these redirect URIs:
+
+- `http://localhost:3000/api/auth/oidc/google/callback`
+- `https://library.livingbliss.org/api/auth/oidc/google/callback`
+
+Store the client ID and secret only in the corresponding environment variables.
+
+### Microsoft
+
+Create a Microsoft Entra Web application that supports personal Microsoft accounts and organisational accounts. Add these redirect URIs:
+
+- `http://localhost:3000/api/auth/oidc/microsoft/callback`
+- `https://library.livingbliss.org/api/auth/oidc/microsoft/callback`
+
+The application uses the multi-tenant `common` OpenID Connect authority. New Microsoft identities confirm their claimed email with a Living Bliss OTP before account creation or linking.
+
+### Hostinger email
+
+Create the `no-reply@livingbliss.org` mailbox, enter its SMTP credentials in hPanel and publish the SPF, DKIM and DMARC records Hostinger supplies. OTPs expire after five minutes and are invalidated after three incorrect attempts.
+
+### Route access
+
+The catalogue, scripture, course and lesson pages remain public. Progress writes, assessments, the dashboard, account settings and certificates require a valid server-side session. OAuth access and refresh tokens are not retained.
+
 ## Data model
 
-The current implementation uses `learner_states` for a browser-linked learner profile, completed lessons and assessment status. The identifier is stored in a secure, HTTP-only, same-site cookie. For public production, associate progress with an authenticated Living Bliss member ID and retain version references for lessons, assessments and certificates. A browser cookie alone is convenient progress persistence, not a full login system.
+Authentication uses `auth_users`, `auth_identities`, hashed opaque `auth_sessions`, single-use `auth_challenges`, short-lived encrypted `auth_oidc_transactions` and database-backed `auth_rate_limits`. `learner_states.user_id` associates progress with the authenticated account. Passwords use Argon2id; raw passwords, OTPs and session tokens are never stored.
 
 ## Important content principle
 

@@ -1,5 +1,7 @@
 import type { RowDataPacket } from "mysql2";
 import { getDb } from "../../../db";
+import { assertSameOrigin } from "../../auth/http";
+import { getSessionFromRequest } from "../../auth/session";
 
 export const runtime = "nodejs";
 
@@ -13,53 +15,23 @@ type ProgressPayload = {
 };
 
 type LearnerRow = RowDataPacket & {
-  id: string;
+  user_id: string;
   display_name: string;
   preferred_language: string;
   learning_mode: string;
   completed_lessons: string | string[];
   assessment_score: number | null;
   assessment_passed: number | boolean;
-  member_joined: number | boolean;
+  onboarding_completed: number | boolean;
   updated_at: string;
 };
 
-const COOKIE_NAME = "lb_learner_id";
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function getCookie(request: Request, name: string) {
-  const cookie = request.headers.get("cookie") ?? "";
-  const item = cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${name}=`));
-  return item ? decodeURIComponent(item.slice(name.length + 1)) : null;
-}
-
-function visitor(request: Request) {
-  const cookieId = getCookie(request, COOKIE_NAME);
-  const existing = cookieId && UUID_PATTERN.test(cookieId) ? cookieId : null;
-  return { id: existing ?? crypto.randomUUID(), isNew: !existing };
-}
-
-function withCookie(payload: unknown, id: string, isNew: boolean, status = 200) {
-  const headers = new Headers({ "content-type": "application/json" });
-  if (isNew) {
-    const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-    headers.append(
-      "set-cookie",
-      `${COOKIE_NAME}=${encodeURIComponent(id)}; Path=/; Max-Age=31536000; HttpOnly; SameSite=Lax${secure}`,
-    );
-  }
-  return new Response(JSON.stringify(payload), { status, headers });
-}
-
-async function ensureLearner(id: string) {
+async function ensureLearner(id: string, displayName: string) {
   await getDb().execute(
     `INSERT IGNORE INTO learner_states
-      (id, display_name, preferred_language, learning_mode, completed_lessons, assessment_score, assessment_passed, member_joined, updated_at)
-     VALUES (?, 'Seeker', 'English', 'Mixed learning', JSON_ARRAY(), NULL, FALSE, FALSE, UTC_TIMESTAMP(3))`,
-    [id],
+      (user_id, display_name, preferred_language, learning_mode, completed_lessons, assessment_score, assessment_passed, onboarding_completed, updated_at)
+     VALUES (?, ?, 'English', 'Mixed learning', JSON_ARRAY(), NULL, FALSE, FALSE, UTC_TIMESTAMP(3))`,
+    [id, displayName.slice(0, 80) || "Seeker"],
   );
 }
 
@@ -77,9 +49,9 @@ function parseCompletedLessons(value: string | string[]) {
 
 async function readLearner(id: string) {
   const [rows] = await getDb().execute<LearnerRow[]>(
-    `SELECT id, display_name, preferred_language, learning_mode, completed_lessons,
-            assessment_score, assessment_passed, member_joined, updated_at
-       FROM learner_states WHERE id = ? LIMIT 1`,
+    `SELECT user_id, display_name, preferred_language, learning_mode, completed_lessons,
+            assessment_score, assessment_passed, onboarding_completed, updated_at
+       FROM learner_states WHERE user_id = ? LIMIT 1`,
     [id],
   );
   const row = rows[0];
@@ -92,16 +64,17 @@ async function readLearner(id: string) {
     completedLessons: parseCompletedLessons(row?.completed_lessons ?? []),
     assessmentScore: row?.assessment_score == null ? null : Number(row.assessment_score),
     assessmentPassed: Boolean(row?.assessment_passed),
-    memberJoined: Boolean(row?.member_joined),
+    memberJoined: Boolean(row?.onboarding_completed),
     updatedAt: row?.updated_at ?? "",
   };
 }
 
 export async function GET(request: Request) {
   try {
-    const { id, isNew } = visitor(request);
-    await ensureLearner(id);
-    return withCookie({ learner: await readLearner(id) }, id, isNew);
+    const user = await getSessionFromRequest(request);
+    if (!user) return Response.json({ learner: null, authenticated: false });
+    await ensureLearner(user.id, user.name);
+    return Response.json({ learner: await readLearner(user.id), authenticated: true, user });
   } catch (error) {
     console.error("Unable to load learner progress", error);
     return Response.json(
@@ -113,9 +86,12 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { id, isNew } = visitor(request);
+    assertSameOrigin(request);
+    const user = await getSessionFromRequest(request);
+    if (!user) return Response.json({ error: "Sign in to save your learning." }, { status: 401 });
+    const id = user.id;
     const payload = (await request.json()) as ProgressPayload;
-    await ensureLearner(id);
+    await ensureLearner(id, user.name);
 
     if (payload.action === "profile") {
       const name = payload.displayName?.trim().slice(0, 80) || "Seeker";
@@ -123,14 +99,15 @@ export async function POST(request: Request) {
       const mode = payload.learningMode?.trim().slice(0, 30) || "Mixed learning";
       await getDb().execute(
         `UPDATE learner_states
-            SET display_name = ?, preferred_language = ?, learning_mode = ?, member_joined = TRUE, updated_at = UTC_TIMESTAMP(3)
-          WHERE id = ?`,
+            SET display_name = ?, preferred_language = ?, learning_mode = ?, onboarding_completed = TRUE, updated_at = UTC_TIMESTAMP(3)
+          WHERE user_id = ?`,
         [name, language, mode, id],
       );
+      await getDb().execute(`UPDATE auth_users SET display_name = ?, updated_at = UTC_TIMESTAMP(3) WHERE id = ?`, [name, id]);
     } else if (payload.action === "completeLesson" && payload.lessonId) {
       const lessonId = payload.lessonId.trim().slice(0, 100);
       if (!lessonId) {
-        return withCookie({ error: "A lesson ID is required." }, id, isNew, 400);
+        return Response.json({ error: "A lesson ID is required." }, { status: 400 });
       }
       await getDb().execute(
         `UPDATE learner_states
@@ -140,7 +117,7 @@ export async function POST(request: Request) {
                   JSON_ARRAY_APPEND(completed_lessons, '$', ?)
                 ),
                 updated_at = UTC_TIMESTAMP(3)
-          WHERE id = ?`,
+          WHERE user_id = ?`,
         [lessonId, lessonId, id],
       );
     } else if (payload.action === "assessment") {
@@ -148,21 +125,21 @@ export async function POST(request: Request) {
       await getDb().execute(
         `UPDATE learner_states
             SET assessment_score = ?, assessment_passed = ?, updated_at = UTC_TIMESTAMP(3)
-          WHERE id = ?`,
+          WHERE user_id = ?`,
         [score, score >= 60, id],
       );
     } else if (payload.action === "reset") {
       await getDb().execute(
         `UPDATE learner_states
             SET completed_lessons = JSON_ARRAY(), assessment_score = NULL, assessment_passed = FALSE, updated_at = UTC_TIMESTAMP(3)
-          WHERE id = ?`,
+          WHERE user_id = ?`,
         [id],
       );
     } else {
-      return withCookie({ error: "Unsupported progress action." }, id, isNew, 400);
+      return Response.json({ error: "Unsupported progress action." }, { status: 400 });
     }
 
-    return withCookie({ learner: await readLearner(id) }, id, isNew);
+    return Response.json({ learner: await readLearner(id), authenticated: true, user });
   } catch (error) {
     console.error("Unable to save learner progress", error);
     return Response.json(

@@ -47,3 +47,5 @@ export function getDb() {
   }
   return globalThis.livingBlissMysqlPool;
 }
+
+export type { PoolConnection } from "mysql2/promise";
