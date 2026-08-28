@@ -64,12 +64,15 @@ p { line-height: 1.7; }
 .header-actions { display: flex; align-items: center; gap: .55rem; }
 .profile-button { display: flex; align-items: center; gap: .58rem; color: var(--indigo); font-size: .82rem; }
 .profile-button span { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: var(--indigo); color: white; font-weight: 800; }
+.header-signout { min-height: 38px; padding: .45rem .7rem; border: 0; background: transparent; color: #5c6273; font-size: .78rem; font-weight: 700; }
+.header-signout:hover { color: var(--indigo); text-decoration: underline; text-underline-offset: 3px; }
 .mobile-menu { display: none; position: relative; }
 .mobile-menu summary { list-style: none; min-height: 42px; display: grid; place-items: center; padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 8px; font-weight: 700; }
 .mobile-menu summary::-webkit-details-marker { display: none; }
 .mobile-menu nav { position: absolute; right: 0; top: calc(100% + 10px); width: 230px; padding: .5rem; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); }
 .mobile-menu nav a { display: block; padding: .75rem; border-radius: 8px; }
-.mobile-menu nav a:hover { background: var(--ivory-deep); }
+.mobile-menu nav button { width: 100%; display: block; padding: .75rem; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; }
+.mobile-menu nav a:hover, .mobile-menu nav button:hover { background: var(--ivory-deep); }
 
 .hero { position: relative; min-height: 610px; display: flex; align-items: center; background: url("/library-hero.png") 62% 53% / cover no-repeat; }
 .hero-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(251,248,241,.98) 0%, rgba(251,248,241,.94) 42%, rgba(251,248,241,.42) 68%, rgba(24,38,79,.05) 100%); }

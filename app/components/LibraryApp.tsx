@@ -62,6 +62,22 @@ function Brand() {
 }
 
 function Header({ view, learner, authenticated, onJoin }: { view: View; learner: Learner; authenticated: boolean; onJoin: () => void }) {
+  const [signingOut, setSigningOut] = useState(false);
+
+  const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) throw new Error("Unable to sign out.");
+      window.location.replace("/sign-in");
+    } catch {
+      setSigningOut(false);
+      window.alert("We couldn't sign you out. Please try again.");
+    }
+  };
+
   return (
     <header className="site-header">
       <div className="header-inner">
@@ -76,10 +92,15 @@ function Header({ view, learner, authenticated, onJoin }: { view: View; learner:
         </nav>
         <div className="header-actions">
           {authenticated ? (
-            <a className="profile-button" href="/dashboard" aria-label={`Open ${learner.displayName}'s learning dashboard`}>
-              <span>{learner.displayName.slice(0, 1).toUpperCase()}</span>
-              <b>My learning</b>
-            </a>
+            <>
+              <a className="profile-button" href="/dashboard" aria-label={`Open ${learner.displayName}'s learning dashboard`}>
+                <span>{learner.displayName.slice(0, 1).toUpperCase()}</span>
+                <b>My learning</b>
+              </a>
+              <button className="header-signout" type="button" onClick={signOut} disabled={signingOut}>
+                {signingOut ? "Signing out…" : "Sign out"}
+              </button>
+            </>
           ) : (
             <>
               <a className="button ghost small" href="/sign-in">Sign in</a>
@@ -92,6 +113,7 @@ function Header({ view, learner, authenticated, onJoin }: { view: View; learner:
               {navItems.map((item) => <a key={item.label} href={item.href}>{item.label}</a>)}
               <a href="/dashboard">My learning</a>
               <a href="/account">Account</a>
+              {authenticated && <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button>}
               <a href="https://livingbliss.org/">Main Living Bliss site ↗</a>
             </nav>
           </details>
