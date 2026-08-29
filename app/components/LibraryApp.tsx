@@ -205,6 +205,14 @@ function HomeView({ learner, onJoin }: { learner: Learner; onJoin: () => void })
         <span>✓ Scholar-reviewed editions</span><span>✓ Source traceability</span><span>✓ Four initial languages</span><span>✓ Accessible learning</span>
       </div>
 
+      <section className="guest-gita-invite">
+        <div className="page-shell guest-gita-invite-inner">
+          <div className="guest-gita-invite-mark" aria-hidden="true"><span>गीता</span><strong>10</strong></div>
+          <div><span className="eyebrow">A complete experience for every visitor</span><h2>Begin with 10 essential shlokas</h2><p>Read and reflect without signing in, take a short assessment and receive a personal completion certificate.</p></div>
+          <a className="button saffron" href="/gita/essential-shlokas">Begin free · no login</a>
+        </div>
+      </section>
+
       {learner.memberJoined && (
         <section className="resume-band">
           <div className="page-shell resume-inner">
@@ -281,7 +289,7 @@ function LibraryView({ initialSearch }: { initialSearch: string }) {
               <article key={item.title} className="result-card">
                 <div className="result-icon" aria-hidden="true">{item.title.slice(0, 1)}</div>
                 <div><span className="eyebrow">{item.type}</span><h2>{item.title}</h2><p>{item.subtitle}</p><div className="result-meta"><span className="verified">{item.status}</span><span>{item.language}</span></div></div>
-                <a href={item.topic === "Gita" ? "/course/gita" : "#collection-notice"}>Open <span aria-hidden="true">→</span></a>
+                <a href={item.title.startsWith("10 Essential Shlokas") ? "/gita/essential-shlokas" : item.topic === "Gita" ? "/course/gita" : "#collection-notice"}>Open <span aria-hidden="true">→</span></a>
               </article>
             ))}
             {!filtered.length && <div className="empty-state"><span>⌕</span><h2>No matching items yet</h2><p>Try a broader title or choose another collection. The repository will grow through reviewed releases.</p><button className="button secondary" onClick={() => { setSearch(""); setTopic("All"); }}>Clear filters</button></div>}
@@ -439,7 +447,7 @@ function MembershipView({ learner, onJoin }: { learner: Learner; onJoin: () => v
     <main className="page-main membership-page">
       <section className="membership-intro page-shell"><span className="eyebrow">Open wisdom · personal membership</span><h1>Scripture remains open.<br />Membership helps you learn.</h1><p>Read verified sacred texts without payment. Create a free profile for personal progress, or support preservation and translation through voluntary membership.</p></section>
       <section className="page-shell plan-grid">
-        <article className="plan-card"><span className="plan-mark">ॐ</span><span className="eyebrow">Open access</span><h2>Guest reader</h2><div className="price">$0 <small>always</small></div><p>For anyone who wants to read, search and share verified scripture.</p><ul><li>Browse the public library</li><li>Read scripture and translations</li><li>Listen to open recitation</li><li>Share stable verse links</li></ul><a className="button secondary wide" href="/library">Explore freely</a></article>
+        <article className="plan-card"><span className="plan-mark">ॐ</span><span className="eyebrow">Open access</span><h2>Guest reader</h2><div className="price">$0 <small>always</small></div><p>For anyone who wants to read, learn and experience the library before joining.</p><ul><li>Browse the public library</li><li>Read scripture and translations</li><li>Study 10 essential Gita shlokas</li><li>Take the guest assessment</li><li>Receive a completion certificate</li></ul><a className="button secondary wide" href="/gita/essential-shlokas">Begin the free experience</a></article>
         <article className="plan-card featured"><span className="recommended-label">Recommended for learners</span><span className="plan-mark">✓</span><span className="eyebrow">Free membership</span><h2>Learning member</h2><div className="price">$0 <small>no card required</small></div><p>For chapter-by-chapter learning with progress and achievement records.</p><ul><li>Everything in open access</li><li>Personal learning dashboard</li><li>Lessons, tests and retakes</li><li>Badges and certificates</li><li>Private bookmarks and notes</li></ul><button className="button primary wide" onClick={onJoin}>{learner.memberJoined ? "Edit learning profile" : "Join free"}</button></article>
         <article className="plan-card"><span className="plan-mark">◇</span><span className="eyebrow">Voluntary support</span><h2>Supporting member</h2><div className="price">Your choice</div><p>For members who wish to sustain preservation, translation and open publishing.</p><ul><li>Everything in free membership</li><li>Supporter impact updates</li><li>Invitations to selected briefings</li><li>No restriction on non-paying learners</li></ul><a className="button saffron wide" href="https://livingbliss.org/donate">Support the mission ↗</a></article>
       </section>
