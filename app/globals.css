@@ -467,7 +467,62 @@ p { line-height: 1.7; }
 .gita-journey-strip { min-height: 70px; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; padding-inline: max(20px, calc((100% - 1180px)/2)); border-bottom: 1px solid var(--line); background: var(--paper); color: var(--muted); font-size: .76rem; font-weight: 700; }
 .gita-journey-strip span { display: flex; align-items: center; gap: .65rem; }
 .gita-journey-strip b { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #fff0dc; color: var(--saffron); }
-.gita-reader-layout { display: grid; grid-template-columns: 280px 1fr; gap: 2rem; align-items: start; padding-block: 5rem 2rem; scroll-margin-top: 70px; }
+.gita-study-stage { min-height: calc(100vh - 76px); padding-block: 14px 24px; background: linear-gradient(145deg, #ede6d9, #f8f4eb); }
+.gita-study-frame { overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 20px; background: var(--paper); box-shadow: var(--shadow); }
+.gita-study-header { min-height: 126px; display: grid; grid-template-columns: 1fr auto; gap: 2rem; align-items: center; padding: 1.15rem 1.5rem; background: radial-gradient(circle at 88% 10%, rgba(217,131,46,.22), transparent 25%), linear-gradient(135deg, #16234a, #22376d); color: white; }
+.gita-study-header h1 { margin: .28rem 0 .3rem; color: white; font-size: clamp(1.8rem, 3.4vw, 2.75rem); line-height: 1; }
+.gita-study-header h1 small { color: #d7deee; font-family: Georgia, serif; font-size: .56em; font-weight: 400; }
+.gita-study-header p { max-width: 700px; margin: 0; color: #cdd5e8; font-size: .76rem; line-height: 1.5; }
+.gita-study-facts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .45rem; }
+.gita-study-facts span { min-width: 78px; padding: .55rem .65rem; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; background: rgba(255,255,255,.07); color: #dce2f0; font-size: .62rem; text-align: center; }
+.gita-study-facts strong { display: block; color: white; font-family: Georgia, serif; font-size: 1.15rem; }
+.gita-study-facts button { min-height: 49px; padding: .5rem .75rem; border: 1px solid rgba(255,255,255,.35); border-radius: 10px; background: transparent; color: white; font-size: .68rem; font-weight: 750; }
+.gita-reader-layout { width: 100%; display: grid; grid-template-columns: 1fr; gap: .8rem; align-items: start; padding: .85rem; scroll-margin-top: 70px; }
+.gita-guest-lesson-shell { width: min(1440px, 100%); height: calc(100vh - 76px); margin-inline: auto; display: grid; grid-template-columns: 292px minmax(0, 1fr); overflow: hidden; background: var(--ivory); }
+.gita-guest-lesson-nav { height: 100%; overflow-y: auto; padding: 1.35rem 1.25rem; border-right: 1px solid var(--line); background: radial-gradient(circle at 20% 0, rgba(217,131,46,.19), transparent 25%), linear-gradient(160deg, #f6efe3, #ede8dc); }
+.gita-journey-emblem { width: 72px; height: 82px; display: grid; place-content: center; margin: -.2rem 0 1rem; border: 1px solid #dbc89e; border-radius: 36px 36px 12px 12px; background: var(--paper); color: var(--indigo); text-align: center; box-shadow: var(--shadow-sm); }
+.gita-journey-emblem span, .gita-journey-emblem strong { display: block; }
+.gita-journey-emblem span { color: var(--saffron); font-family: Georgia, serif; font-size: .72rem; }
+.gita-journey-emblem strong { font-family: Georgia, serif; font-size: 2rem; line-height: 1; }
+.gita-guest-lesson-nav h2 { margin: .4rem 0 .8rem; font-size: 1.75rem; line-height: 1.05; }
+.gita-star-progress { display: flex; align-items: baseline; gap: .45rem; margin-bottom: .55rem; }
+.gita-star-progress strong { color: var(--saffron); font-family: Georgia, serif; font-size: 1.65rem; }
+.gita-star-progress span { color: var(--muted); font-size: .67rem; font-weight: 700; }
+.gita-guest-lesson-nav > small { display: block; margin: .5rem 0 1rem; color: var(--muted); font-size: .65rem; }
+.gita-guest-lesson-nav nav { display: grid; gap: .4rem; }
+.gita-guest-lesson-nav nav button { width: 100%; display: grid; grid-template-columns: 34px 1fr; gap: .65rem; align-items: center; min-height: 58px; padding: .55rem .65rem; border: 0; border-radius: 10px; background: transparent; color: #5b6070; text-align: left; }
+.gita-guest-lesson-nav nav button > span { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--saffron); font-size: .72rem; font-weight: 800; }
+.gita-guest-lesson-nav nav button small, .gita-guest-lesson-nav nav button strong { display: block; }
+.gita-guest-lesson-nav nav button small { color: #938b7c; font-size: .56rem; letter-spacing: .08em; text-transform: uppercase; }
+.gita-guest-lesson-nav nav button strong { margin-top: .1rem; color: inherit; font-size: .73rem; }
+.gita-guest-lesson-nav nav button.active { background: var(--paper); color: var(--indigo); box-shadow: var(--shadow-sm); }
+.gita-guest-lesson-nav nav button.active > span { border-color: var(--indigo); background: var(--indigo); color: white; }
+.gita-guest-lesson-nav nav button.assessment-ready { background: #e5f1e9; color: #256443; }
+.gita-guest-lesson-nav nav button.assessment-ready > span { border-color: #8fb59d; color: #256443; }
+.gita-guest-lesson-nav nav button.locked { opacity: .55; }
+.gita-youth-tip { display: grid; grid-template-columns: 32px 1fr; gap: .6rem; margin-top: 1rem; padding: .85rem; border-radius: 12px; background: linear-gradient(135deg, #fff3d9, #ffe8d7); }
+.gita-youth-tip > span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: white; color: var(--saffron); }
+.gita-youth-tip p { margin: 0; color: var(--muted); font-size: .65rem; line-height: 1.45; }
+.gita-youth-tip strong { color: var(--indigo); }
+.gita-sidebar-certificate { width: 100%; margin-top: .75rem; padding: .65rem; border: 1px solid var(--gold); border-radius: 9px; background: transparent; color: var(--indigo); font-size: .68rem; font-weight: 750; }
+.gita-guest-lesson-content { width: 100%; min-width: 0; height: 100%; overflow-y: auto; padding: 1.6rem clamp(1.2rem, 3vw, 3rem) 3rem; }
+.gita-guest-heading { min-width: 0; max-width: 1050px; margin-inline: auto; }
+.gita-guest-heading h1 { font-size: clamp(2.5rem, 5vw, 4.4rem); line-height: .98; }
+.gita-guest-heading > div > p { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.gita-theme-chip { display: inline-flex; padding: .32rem .55rem; border-radius: 99px; background: #fff0dc; color: #9b5c1c; font-size: .64rem; font-weight: 800; }
+.gita-shloka-stepper { flex: 0 0 auto; display: grid; grid-template-columns: 34px 48px 34px; gap: .35rem; align-items: center; padding: .35rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.gita-shloka-stepper button { width: 34px; height: 34px; border: 0; border-radius: 8px; background: var(--soft-blue); color: var(--indigo); font-weight: 800; }
+.gita-shloka-stepper strong { color: var(--indigo); font-family: Georgia, serif; font-size: 1.25rem; text-align: center; }
+.gita-shloka-stepper small { margin-left: .1rem; color: var(--muted); font-family: Inter, sans-serif; font-size: .58rem; }
+.gita-guest-lesson-content .gita-format-tabs, .gita-guest-lesson-content .gita-format-tabs + .video-panel, .gita-guest-lesson-content .gita-format-tabs + .slides-panel, .gita-guest-lesson-content .gita-format-tabs + .verse-panel { width: 100%; max-width: 1050px; margin-inline: auto; }
+.gita-guest-lesson-content .gita-reflection, .gita-guest-lesson-content .gita-inline-source { max-width: 1050px; margin-inline: auto; }
+.gita-guest-lesson-content .gita-reflection { margin-top: 1rem; }
+.gita-guest-lesson-content .gita-inline-source { margin-top: .7rem; }
+.gita-guest-lesson-content .gita-reader-actions { max-width: 1050px; margin-inline: auto; padding-inline: 0; }
+.gita-single-progress { display: grid; grid-template-columns: 1fr auto; gap: .65rem 1rem; align-items: end; padding: 1rem 1.2rem; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.gita-single-progress strong { display: block; margin-top: .2rem; color: var(--indigo); font-size: .88rem; }
+.gita-single-progress > span { color: var(--muted); font-size: .7rem; font-weight: 700; }
+.gita-single-progress .mini-progress { grid-column: 1 / -1; }
 .gita-shloka-index { position: sticky; top: 98px; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
 .gita-shloka-index > div { padding: 1.2rem; border-bottom: 1px solid var(--line); }
 .gita-shloka-index > div > strong { display: block; margin: .4rem 0 .7rem; color: var(--indigo); font-size: .83rem; }
@@ -483,15 +538,30 @@ p { line-height: 1.7; }
 .gita-shloka-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: 2rem 2.2rem 1.5rem; }
 .gita-shloka-heading h2 { max-width: 680px; margin: .5rem 0 0; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.08; }
 .gita-count { color: #b9b0a1; font-family: Georgia, serif; font-size: 1rem; }
+.gita-format-tabs { margin-inline: 2.2rem; }
+.gita-format-tabs + .video-panel, .gita-format-tabs + .slides-panel, .gita-format-tabs + .verse-panel { margin-inline: 2.2rem; }
+.gita-video-panel .video-cover { min-height: 330px; }
+.gita-video-symbol { width: 76px; height: 76px; display: grid; place-items: center; margin-bottom: 1rem; border: 2px solid white; border-radius: 50%; background: rgba(255,255,255,.15); color: white; font-size: 1.5rem; }
+.gita-video-summary { min-height: 120px; padding: 1.3rem 1.5rem; background: white; }
+.gita-video-summary p { margin: .35rem 0 0; color: var(--muted); font-size: .8rem; }
+.gita-slides-panel { min-height: 470px; }
+.gita-slides-panel .slide-inner { max-width: 760px; }
+.gita-slides-panel .slide-inner h2 { margin-bottom: 1rem; }
+.gita-slides-panel .slide-inner > p { max-width: 680px; margin: 0 auto 2rem; color: var(--muted); font-size: .9rem; }
+.gita-text-panel { min-height: 470px; }
+.gita-text-label { margin-left: auto; color: var(--muted); font-size: .68rem; }
 .gita-scripture { padding: 2.8rem 2rem; background: linear-gradient(135deg, #192750, #263c73); color: white; text-align: center; }
 .gita-scripture .devanagari { margin: 0; color: white; font-size: clamp(1.55rem, 3.4vw, 2.5rem); line-height: 1.75; white-space: pre-line; }
 .gita-scripture .transliteration { margin: 1.6rem 0 0; color: #d0d8eb; font-size: .88rem; line-height: 1.8; white-space: pre-line; }
 .gita-meaning { padding: 2rem 2.2rem; }
 .gita-meaning span, .gita-reflection small { color: var(--saffron); font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .gita-meaning p { margin: .7rem 0 0; color: #424a5e; font-family: Georgia, serif; font-size: 1.35rem; line-height: 1.65; }
-.gita-reflection { display: grid; grid-template-columns: 42px 1fr; gap: 1rem; align-items: start; margin: 0 2.2rem; padding: 1.25rem; border-radius: 12px; background: #fff6e8; }
+.gita-reflection { display: grid; grid-template-columns: 42px 1fr; gap: 1rem; align-items: start; margin: 1.5rem 2.2rem 0; padding: 1.25rem; border-radius: 12px; background: #fff6e8; }
 .gita-reflection > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: white; color: var(--gold); }
 .gita-reflection p { margin: .25rem 0 0; color: var(--indigo); font-size: .85rem; }
+.gita-inline-source { display: flex; gap: .65rem; align-items: start; margin: .8rem 2.2rem 0; padding: .7rem .85rem; border-radius: 9px; background: #eaf3ed; color: var(--green); }
+.gita-inline-source p { margin: 0; color: var(--muted); font-size: .66rem; line-height: 1.45; }
+.gita-inline-source strong { color: #256443; }
 .gita-reader-actions { display: flex; justify-content: space-between; gap: 1rem; padding: 2rem 2.2rem; }
 .gita-source-note { display: flex; gap: 1rem; margin-bottom: 5rem; padding: 1.3rem; border-left: 4px solid var(--green); background: #eaf3ed; }
 .gita-source-note > span { color: var(--green); font-weight: 900; }
@@ -597,6 +667,16 @@ p { line-height: 1.7; }
   .guest-gita-invite-inner { grid-template-columns: 70px 1fr; padding-block: 1.5rem; }
   .guest-gita-invite-mark { width: 64px; height: 84px; }
   .guest-gita-invite .button { grid-column: 2; justify-self: start; }
+  .gita-guest-lesson-shell { height: auto; min-height: calc(100vh - 68px); grid-template-columns: minmax(0, 1fr); overflow: hidden visible; }
+  .gita-guest-lesson-nav { height: auto; overflow: visible; padding: .8rem 14px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .gita-guest-lesson-nav .back-link, .gita-journey-emblem, .gita-guest-lesson-nav > .eyebrow, .gita-guest-lesson-nav > h2, .gita-youth-tip, .gita-sidebar-certificate { display: none; }
+  .gita-star-progress { margin-bottom: .25rem; }
+  .gita-guest-lesson-nav > small { margin: .25rem 0 .65rem; }
+  .gita-guest-lesson-nav nav { display: flex; overflow-x: auto; }
+  .gita-guest-lesson-nav nav button { min-width: 145px; }
+  .gita-guest-lesson-content { height: auto; overflow: hidden visible; padding: 1.4rem 20px 3rem; }
+  .gita-study-header { grid-template-columns: 1fr; gap: .9rem; }
+  .gita-study-facts { justify-content: flex-start; }
   .gita-guest-hero-inner { grid-template-columns: 1fr; }
   .gita-guest-hero aside { width: 220px; justify-self: center; }
   .gita-reader-layout { grid-template-columns: 1fr; }
@@ -684,11 +764,25 @@ p { line-height: 1.7; }
   .gita-guest-hero aside { width: 190px; }
   .gita-guest-hero aside strong { font-size: 4.7rem; }
   .gita-journey-strip { grid-template-columns: 1fr 1fr; gap: .7rem; padding-block: .9rem; }
-  .gita-reader-layout { width: calc(100% - 20px); padding-top: 2rem; }
+  .gita-study-stage { min-height: calc(100vh - 68px); padding-block: 6px 14px; }
+  .gita-study-frame { width: calc(100% - 12px); border-radius: 14px; }
+  .gita-study-header { padding: 1rem; }
+  .gita-study-header h1 small { display: block; margin-top: .25rem; }
+  .gita-study-facts { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .gita-study-facts button { grid-column: 1 / -1; }
+  .gita-reader-layout { width: 100%; padding: .55rem; }
   .gita-shloka-index nav { grid-template-columns: repeat(5, 1fr); }
   .gita-shloka-heading, .gita-meaning, .gita-reader-actions { padding-inline: 1.2rem; }
+  .gita-format-tabs, .gita-format-tabs + .video-panel, .gita-format-tabs + .slides-panel, .gita-format-tabs + .verse-panel { margin-inline: 1.2rem; }
+  .gita-format-tabs { overflow-x: auto; }
+  .gita-format-tabs button { min-width: 135px; }
+  .gita-video-panel .video-cover { min-height: 300px; }
+  .gita-slides-panel .slide-points { flex-direction: column; }
+  .gita-text-panel { padding: 1.2rem; }
+  .gita-text-panel .meaning-grid { grid-template-columns: 1fr; }
   .gita-scripture { padding: 2.2rem 1rem; }
   .gita-reflection { margin-inline: 1.2rem; }
+  .gita-inline-source { margin-inline: 1.2rem; }
   .gita-reader-actions { display: grid; grid-template-columns: 1fr; }
   .gita-reader-actions .button { width: 100%; }
   .gita-assessment-intro > div { position: static; margin-top: 1rem; }
@@ -697,6 +791,8 @@ p { line-height: 1.7; }
   .gita-assessment-submit .button { width: 100%; }
   .gita-name-form > div { grid-template-columns: 1fr; }
   .gita-name-form .button { width: 100%; }
+  .gita-guest-heading { display: block; }
+  .gita-shloka-stepper { width: max-content; margin-bottom: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -196,7 +196,7 @@ function HomeView({ learner, onJoin }: { learner: Learner; onJoin: () => void })
           </form>
           <div className="hero-actions">
             <a className="button primary" href="/library?search=Jagannatha">Explore Jagannatha Dham</a>
-            <a className="button light" href="/course/gita">Start the Gita pathway</a>
+            <a className="button light" href="/gita/start">Start the Gita pathway</a>
           </div>
         </div>
       </section>

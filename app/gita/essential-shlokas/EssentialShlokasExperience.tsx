@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { essentialQuestions, essentialShlokas } from "./data";
 
 type Phase = "study" | "assessment" | "result" | "certificate";
+type LearningFormat = "video" | "slides" | "text";
 
 const storageKey = "living-bliss-essential-gita-v1";
 
@@ -41,6 +42,7 @@ function GuestFooter() {
 
 export default function EssentialShlokasExperience() {
   const [phase, setPhase] = useState<Phase>("study");
+  const [format, setFormat] = useState<LearningFormat>("video");
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState<GuestProgress>(emptyProgress);
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -118,24 +120,52 @@ export default function EssentialShlokasExperience() {
       <GuestHeader />
       <main id="main-content">
         {phase === "study" && <>
-          <section className="gita-guest-hero">
-            <div className="page-shell gita-guest-hero-inner">
-              <div><span className="eyebrow">Open learning · no login required</span><h1>10 essential shlokas<br />for everyday life.</h1><p>Read the Sanskrit, explore a clear meaning and pause for reflection. Visit all ten, pass a short assessment and receive a personal completion certificate—freely.</p><div className="hero-actions"><a className="button saffron" href="#shloka-reader">Begin with shloka 1</a>{resumeCertificate && <button className="button outline-light" onClick={() => setPhase("certificate")}>View my certificate</button>}</div></div>
-              <aside><span>गीता</span><strong>10</strong><p>timeless teachings</p><small>Read at your own pace · about 20 minutes</small></aside>
-            </div>
-          </section>
-          <section className="gita-journey-strip"><span><b>1</b> Read all 10</span><span><b>2</b> Take 7 questions</span><span><b>3</b> Score 70%</span><span><b>4</b> Receive certificate</span></section>
-          <section className="page-shell gita-reader-layout" id="shloka-reader">
-            <aside className="gita-shloka-index"><div><span className="eyebrow">Your reading journey</span><strong>{progress.viewed.length} of 10 visited</strong><div className="mini-progress"><span style={{ width: `${progress.viewed.length * 10}%` }} /></div></div><nav aria-label="Essential shlokas">{essentialShlokas.map((item, index) => <button key={item.reference} className={active === index ? "active" : ""} onClick={() => visit(index)} aria-current={active === index ? "step" : undefined}><span>{progress.viewed.includes(index) ? "✓" : index + 1}</span><div><small>Gita {item.reference}</small><strong>{item.theme}</strong></div></button>)}</nav></aside>
-            <article className="gita-shloka-card">
-              <div className="gita-shloka-heading"><div><span className="eyebrow">Bhagavad Gita · {shloka.reference}</span><h2>{shloka.title}</h2></div><span className="gita-count">{String(active + 1).padStart(2, "0")} / 10</span></div>
-              <div className="gita-scripture"><p className="devanagari" lang="sa">{shloka.devanagari}</p><p className="transliteration">{shloka.transliteration}</p></div>
-              <div className="gita-meaning"><span>Plain-language meaning</span><p>{shloka.meaning}</p></div>
+          <section className="gita-guest-lesson-shell" id="shloka-reader">
+            <aside className="gita-guest-lesson-nav">
+              <Link className="back-link" href="/">← Library home</Link>
+              <div className="gita-journey-emblem" aria-hidden="true"><span>गी</span><strong>{active + 1}</strong></div>
+              <span className="eyebrow">Open Gita pathway</span>
+              <h2>10 Essential<br />Shlokas</h2>
+              <div className="gita-star-progress"><strong>{progress.viewed.length}</strong><span>of 10 wisdom stars collected</span></div>
+              <div className="lesson-progress"><span style={{ width: `${progress.viewed.length * 10}%` }} /></div>
+              <small>Shloka {active + 1} · Gita {shloka.reference}</small>
+              <nav aria-label="Current shloka activities">
+                <button type="button" className={format === "video" ? "active" : ""} onClick={() => setFormat("video")}><span>▶</span><div><small>Discover</small><strong>Video overview</strong></div></button>
+                <button type="button" className={format === "slides" ? "active" : ""} onClick={() => setFormat("slides")}><span>▤</span><div><small>Explore</small><strong>Study slides</strong></div></button>
+                <button type="button" className={format === "text" ? "active" : ""} onClick={() => setFormat("text")}><span>ॐ</span><div><small>Read</small><strong>Verse &amp; meaning</strong></div></button>
+                <button type="button" className={allViewed ? "assessment-ready" : "locked"} disabled={!allViewed} onClick={startAssessment}><span>★</span><div><small>Final step</small><strong>{allViewed ? "Take assessment" : "Assessment locked"}</strong></div></button>
+              </nav>
+              <div className="gita-youth-tip"><span>✦</span><p><strong>Your wisdom adventure</strong><br />Watch, explore or read—choose the way you learn best.</p></div>
+              {resumeCertificate && <button className="gita-sidebar-certificate" type="button" onClick={() => setPhase("certificate")}>View my certificate →</button>}
+            </aside>
+            <section className="gita-guest-lesson-content">
+              <div className="lesson-heading gita-guest-heading">
+                <div><span className="eyebrow">Essential shloka {active + 1} of 10 · Bhagavad Gita {shloka.reference}</span><h1>{shloka.title}</h1><p><span className="gita-theme-chip">{shloka.theme}</span> Choose a learning format, then pause with the reflection before continuing.</p></div>
+                <div className="gita-shloka-stepper"><button type="button" disabled={active === 0} onClick={() => visit(active - 1)} aria-label="Previous shloka">←</button><strong>{active + 1}<small>/10</small></strong><button type="button" disabled={active === 9} onClick={() => visit(active + 1)} aria-label="Next shloka">→</button></div>
+              </div>
+              <div className="media-tabs gita-format-tabs" role="tablist" aria-label="Learning format">
+                <button type="button" role="tab" aria-selected={format === "video"} onClick={() => setFormat("video")}>▶ Video overview</button>
+                <button type="button" role="tab" aria-selected={format === "slides"} onClick={() => setFormat("slides")}>▤ Study slides</button>
+                <button type="button" role="tab" aria-selected={format === "text"} onClick={() => setFormat("text")}>ॐ Verse &amp; meaning</button>
+              </div>
+              {format === "video" && <div className="video-panel gita-video-panel" role="tabpanel">
+                <div className="video-cover"><span className="gita-video-symbol" aria-hidden="true">▶</span><div><span>Essential shloka {active + 1} · Gita {shloka.reference}</span><strong>{shloka.title}</strong><small>Guided overview · captions and transcript</small></div></div>
+                <div className="gita-video-summary"><span className="eyebrow">In this overview</span><p>{shloka.meaning}</p></div>
+              </div>}
+              {format === "slides" && <div className="slides-panel gita-slides-panel" role="tabpanel">
+                <span className="slide-count">Shloka {active + 1} of 10</span>
+                <div className="slide-inner"><span className="eyebrow">{shloka.theme}</span><h2>{shloka.title}</h2><p>{shloka.meaning}</p><div className="slide-points"><span>Gita {shloka.reference}</span><span>Everyday wisdom</span><span>Pause &amp; reflect</span></div></div>
+              </div>}
+              {format === "text" && <div className="verse-panel gita-text-panel" role="tabpanel">
+                <div className="verse-tools"><span className="verified">Verified source text</span><span className="gita-text-label">देवनागरी · IAST · English</span></div>
+                <p className="devanagari" lang="sa">{shloka.devanagari}</p><p className="transliteration">{shloka.transliteration}</p>
+                <div className="meaning-grid"><div><strong>Plain-language meaning</strong><p>{shloka.meaning}</p></div><div><strong>Source</strong><p>Bhagavad Gita {shloka.reference} · traditional chapter-and-verse numbering.</p></div></div>
+              </div>}
               <div className="gita-reflection"><span aria-hidden="true">◇</span><div><small>Pause and reflect</small><p>{shloka.reflection}</p></div></div>
+              <div className="gita-inline-source"><span>✓</span><p><strong>Source-aware presentation.</strong> Sanskrit, transliteration and the original plain-language summary are kept visibly distinct.</p></div>
               <div className="gita-reader-actions"><button className="button secondary" disabled={active === 0} onClick={() => visit(active - 1)}>← Previous</button>{active < 9 ? <button className="button primary" onClick={() => visit(active + 1)}>Next shloka →</button> : <button className="button primary" disabled={!allViewed} onClick={startAssessment}>{allViewed ? "Begin assessment →" : "Visit all shlokas first"}</button>}</div>
-            </article>
+            </section>
           </section>
-          <section className="gita-source-note page-shell"><span>✓</span><div><strong>Source-aware presentation</strong><p>Sanskrit shlokas are presented separately from transliteration and an original plain-language learning summary. References follow the traditional chapter-and-verse numbering.</p></div></section>
         </>}
 
         {phase === "assessment" && <section className="gita-assessment page-shell"><div className="gita-assessment-intro"><span className="eyebrow">Guest assessment · no login required</span><h1>Check your understanding</h1><p>Answer all seven questions. You need 70% to receive the completion certificate, and you may try again as often as you wish.</p><div><strong>{answered}/7</strong><span>answered</span></div></div><div className="gita-question-list">{essentialQuestions.map((question, questionIndex) => <fieldset key={question.question}><legend><span>{questionIndex + 1}</span>{question.question}</legend>{question.answers.map((answer, answerIndex) => <label key={answer} className={answers[questionIndex] === answerIndex ? "selected" : ""}><input type="radio" name={`essential-${questionIndex}`} checked={answers[questionIndex] === answerIndex} onChange={() => setAnswers((current) => ({ ...current, [questionIndex]: answerIndex }))} /><span>{String.fromCharCode(65 + answerIndex)}</span>{answer}</label>)}</fieldset>)}</div><div className="gita-assessment-submit"><button className="button secondary" onClick={() => setPhase("study")}>← Return to shlokas</button><button className="button primary" disabled={answered < essentialQuestions.length} onClick={submitAssessment}>Submit assessment</button></div></section>}
