@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export default async function StartGitaPathwayPage() {
   const user = await getSession();
-  redirect(user ? "/dashboard" : "/gita/essential-shlokas");
+  redirect(user ? "/dashboard" : "/course/gita/foundations");
 }

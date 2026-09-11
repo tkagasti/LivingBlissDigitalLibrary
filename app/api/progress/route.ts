@@ -2,6 +2,13 @@ import type { RowDataPacket } from "mysql2";
 import { getDb } from "../../../db";
 import { assertSameOrigin } from "../../auth/http";
 import { getSessionFromRequest } from "../../auth/session";
+import { applyDemoProgress } from "../../demo/demo-data";
+import {
+  assertDemoRequestOrigin,
+  attachDemoCookie,
+  demoAuthUser,
+  getDemoSessionFromRequest,
+} from "../../demo/server";
 
 export const runtime = "nodejs";
 
@@ -71,6 +78,16 @@ async function readLearner(id: string) {
 
 export async function GET(request: Request) {
   try {
+    const demoSession = getDemoSessionFromRequest(request);
+    if (demoSession) {
+      return Response.json({
+        learner: demoSession.learner,
+        authenticated: true,
+        user: demoAuthUser(demoSession),
+        demo: true,
+      });
+    }
+
     const user = await getSessionFromRequest(request);
     if (!user) return Response.json({ learner: null, authenticated: false });
     await ensureLearner(user.id, user.name);
@@ -86,6 +103,29 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const demoSession = getDemoSessionFromRequest(request);
+    if (demoSession) {
+      try {
+        assertDemoRequestOrigin(request);
+        const payload = (await request.json()) as ProgressPayload;
+        const updated = applyDemoProgress(demoSession, payload);
+        return attachDemoCookie(
+          Response.json({
+            learner: updated.learner,
+            authenticated: true,
+            user: demoAuthUser(updated),
+            demo: true,
+          }),
+          updated,
+        );
+      } catch (error) {
+        return Response.json(
+          { error: error instanceof Error ? error.message : "Unable to update demo progress." },
+          { status: 400 },
+        );
+      }
+    }
+
     assertSameOrigin(request);
     const user = await getSessionFromRequest(request);
     if (!user) return Response.json({ error: "Sign in to save your learning." }, { status: 401 });
@@ -121,6 +161,14 @@ export async function POST(request: Request) {
         [lessonId, lessonId, id],
       );
     } else if (payload.action === "assessment") {
+      const learner = await readLearner(id);
+      const requiredShlokas = ["gita-2-47", "gita-2-48"];
+      if (!requiredShlokas.every((lessonId) => learner.completedLessons.includes(lessonId))) {
+        return Response.json(
+          { error: "Complete every prescribed Chapter 2 shloka before taking the assessment." },
+          { status: 409 },
+        );
+      }
       const score = Math.max(0, Math.min(100, Math.round(Number(payload.score) || 0)));
       await getDb().execute(
         `UPDATE learner_states

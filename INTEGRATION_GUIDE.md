@@ -36,14 +36,15 @@ This package contains the complete source used for the Living Bliss Digital Libr
 2. Run `npm ci` from this directory.
 3. Copy `.env.example` to `.env.local` and enter your local MySQL credentials.
 4. Apply `database/queries/001_create_learner_states.sql`, then `database/queries/002_create_authentication.sql`.
-5. Add the database, authentication, OAuth and SMTP values from `.env.example`.
-6. Run `npm run dev` for local development.
-7. Run `npm run test:unit`, `npm run lint` and `npm run build` before deployment.
+5. Apply the future-state learning schema at `database/platform-migrations/0000_create_learning_platform.sql` using the Drizzle migration runner. Load `database/seeds/001_living_bliss_gita_prototype.sql` only in a development/review database.
+6. Add the database, authentication, OAuth and SMTP values from `.env.example`.
+7. Run `npm run dev` for local development.
+8. Run `npm run test:unit`, `npm run lint` and `npm run build` before deployment.
 
 ## Hostinger deployment
 
 1. In hPanel, create a MySQL database and database user. Keep the generated database name, username and password.
-2. Back up any existing database, then import `database/queries/001_create_learner_states.sql` followed by `database/queries/002_create_authentication.sql`. The second migration intentionally clears anonymous prototype progress.
+2. Back up any existing database, then import `database/queries/001_create_learner_states.sql` followed by `database/queries/002_create_authentication.sql`. The second migration intentionally clears anonymous prototype progress. Apply the reviewed future-state Drizzle migration after confirming the hosting database is MySQL 8+ with `utf8mb4`.
 3. Create a Node.js application for this project. Use `npm run build` as the build command and `npm start` as the start command.
 4. Add every database and authentication variable from `.env.example` in hPanel. Use independent high-entropy values for `AUTH_OTP_SECRET` and `AUTH_ENCRYPTION_SECRET`.
 5. Keep `DB_PASSWORD` in hPanel only. Never commit or upload a populated `.env.local` file.
@@ -101,7 +102,7 @@ The catalogue, scripture, course and lesson pages remain public. Progress writes
 
 ## Data model
 
-Authentication uses `auth_users`, `auth_identities`, hashed opaque `auth_sessions`, single-use `auth_challenges`, short-lived encrypted `auth_oidc_transactions` and database-backed `auth_rate_limits`. `learner_states.user_id` associates progress with the authenticated account. Passwords use Argon2id; raw passwords, OTPs and session tokens are never stored.
+Authentication uses `auth_users`, `auth_identities`, hashed opaque `auth_sessions`, single-use `auth_challenges`, short-lived encrypted `auth_oidc_transactions` and database-backed `auth_rate_limits`. The future-state model adds tenant-controlled scripture editions, multilingual verse layers, commentary editions, curriculum releases, schools/cohorts, normalized progress, assessments, credentials, rights governance and citation-first AI sources. `learner_states` remains a temporary compatibility projection during migration. Passwords use Argon2id; raw passwords, OTPs and session tokens are never stored. See `docs/LIVING_BLISS_DATABASE_ARCHITECTURE.md`.
 
 ## Important content principle
 

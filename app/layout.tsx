@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   },
   description:
     "Authentic scriptures, guided chapter-by-chapter learning, personal progress, assessments and verified achievements.",
-  metadataBase: new URL("https://living-bliss-library.sites.openai.com"),
+  metadataBase: new URL("https://library.livingbliss.org"),
   openGraph: {
     title: "Living Bliss Digital Library",
     description: "Authentic scripture • Guided learning • Progress & certificates",

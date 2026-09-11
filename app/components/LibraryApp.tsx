@@ -4,6 +4,14 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { chapters, collections, libraryItems, questions } from "../lib-data";
+import { gitaChapters } from "../course/gita/course-data";
+import type { DemoProfileId, DemoProfileSummary } from "../demo/demo-data";
+import ShlokaStudyPanel, {
+  localizeStudyDigits,
+  resolveStudyLanguage,
+  type ShlokaReference,
+  type StudyLanguage,
+} from "./ShlokaStudyPanel";
 
 export type View =
   | "home"
@@ -39,12 +47,125 @@ const initialLearner: Learner = {
   updatedAt: "",
 };
 
+const chapterTwoShlokaIds = ["gita-2-47", "gita-2-48"] as const;
+
+function completedChapterTwoShlokas(learner: Learner) {
+  return chapterTwoShlokaIds.filter((id) => learner.completedLessons.includes(id)).length;
+}
+
+function chapterTwoStudyComplete(learner: Learner) {
+  return completedChapterTwoShlokas(learner) === chapterTwoShlokaIds.length;
+}
+
+function nextChapterTwoHref(learner: Learner) {
+  if (!learner.completedLessons.includes("gita-2-47")) return "/lesson/gita-2-47";
+  if (!learner.completedLessons.includes("gita-2-48")) return "/lesson/gita-2-48";
+  return "/assessment/gita-2";
+}
+
 const navItems = [
   { label: "Library", href: "/library", views: ["library"] },
   { label: "Learn", href: "/course/gita", views: ["course", "lesson", "assessment"] },
   { label: "Jagannatha Dham", href: "/library?search=Jagannatha", views: [] },
   { label: "Membership", href: "/membership", views: ["membership"] },
 ];
+
+type DemoStatus = {
+  enabled: boolean;
+  activeProfileId: DemoProfileId | null;
+  profiles: DemoProfileSummary[];
+};
+
+function DemoToolbar({
+  status,
+  busyProfile,
+  onActivate,
+  onClear,
+  language = "English",
+}: {
+  status: DemoStatus;
+  busyProfile: DemoProfileId | "clear" | null;
+  onActivate: (profile: DemoProfileSummary) => void;
+  onClear: () => void;
+  language?: StudyLanguage;
+}) {
+  if (!status.enabled) return null;
+  const active = status.profiles.find((profile) => profile.id === status.activeProfileId);
+  const copy = {
+    English: {
+      prototype: "Local prototype",
+      aria: "Local demonstration profiles",
+      experience: "Experience the portal with test data",
+      choose: "Choose a learner stage. No production records are changed.",
+      labels: { "new-learner": "New learner", "active-learner": "Active learner", "course-completer": "Course completer" },
+      descriptions: {
+        "new-learner": "Explore the course before completing the first lesson.",
+        "active-learner": "Continue to the next shloka before the chapter assessment.",
+        "course-completer": "View a passed assessment, achievement and certificate.",
+      },
+      closing: "Closing…",
+      exit: "Exit demo",
+    },
+    Hindi: {
+      prototype: "स्थानीय प्रोटोटाइप",
+      aria: "स्थानीय प्रदर्शन प्रोफाइल",
+      experience: "परीक्षण सामग्री के साथ पोर्टल देखें",
+      choose: "विद्यार्थी की अवस्था चुनें। उत्पादन अभिलेखों में कोई परिवर्तन नहीं होगा।",
+      labels: { "new-learner": "नया विद्यार्थी", "active-learner": "सक्रिय विद्यार्थी", "course-completer": "पाठ्यक्रम पूर्ण" },
+      descriptions: {
+        "new-learner": "पहला पाठ पूर्ण करने से पहले पाठ्यक्रम देखें।",
+        "active-learner": "अध्याय के मूल्यांकन से पहले अगले श्लोक का अध्ययन जारी रखें।",
+        "course-completer": "उत्तीर्ण मूल्यांकन, उपलब्धि और प्रमाणपत्र देखें।",
+      },
+      closing: "बन्द हो रहा है…",
+      exit: "डेमो बन्द करें",
+    },
+    Odia: {
+      prototype: "ସ୍ଥାନୀୟ ପ୍ରୋଟୋଟାଇପ୍",
+      aria: "ସ୍ଥାନୀୟ ପ୍ରଦର୍ଶନ ପ୍ରୋଫାଇଲ୍",
+      experience: "ପରୀକ୍ଷା ତଥ୍ୟ ସହିତ ପୋର୍ଟାଲ୍ ଦେଖନ୍ତୁ",
+      choose: "ଶିକ୍ଷାର୍ଥୀଙ୍କ ଅବସ୍ଥା ଚୟନ କରନ୍ତୁ। ପ୍ରଡକ୍ସନ୍ ରେକର୍ଡରେ କୌଣସି ପରିବର୍ତ୍ତନ ହେବ ନାହିଁ।",
+      labels: { "new-learner": "ନୂତନ ଶିକ୍ଷାର୍ଥୀ", "active-learner": "ସକ୍ରିୟ ଶିକ୍ଷାର୍ଥୀ", "course-completer": "ପାଠ୍ୟକ୍ରମ ସମ୍ପୂର୍ଣ୍ଣ" },
+      descriptions: {
+        "new-learner": "ପ୍ରଥମ ପାଠ ସମ୍ପୂର୍ଣ୍ଣ କରିବା ପୂର୍ବରୁ ପାଠ୍ୟକ୍ରମ ଦେଖନ୍ତୁ।",
+        "active-learner": "ଅଧ୍ୟାୟ ମୂଲ୍ୟାୟନ ପୂର୍ବରୁ ପରବର୍ତ୍ତୀ ଶ୍ଲୋକର ଅଧ୍ୟୟନ ଜାରି ରଖନ୍ତୁ।",
+        "course-completer": "ଉତ୍ତୀର୍ଣ୍ଣ ମୂଲ୍ୟାୟନ, ଉପଲବ୍ଧି ଓ ପ୍ରମାଣପତ୍ର ଦେଖନ୍ତୁ।",
+      },
+      closing: "ବନ୍ଦ ହେଉଛି…",
+      exit: "ଡେମୋ ବନ୍ଦ କରନ୍ତୁ",
+    },
+  }[language];
+
+  return (
+    <aside className="demo-toolbar" aria-label={copy.aria}>
+      <div className="demo-toolbar-intro">
+        <span>{copy.prototype}</span>
+        <strong>{active ? `${copy.labels[active.id]}: ${active.learnerName}` : copy.experience}</strong>
+        <small>{active ? copy.descriptions[active.id] : copy.choose}</small>
+      </div>
+      <div className="demo-profile-actions">
+        {status.profiles.map((profile) => (
+          <button
+            key={profile.id}
+            className={profile.id === status.activeProfileId ? "active" : ""}
+            type="button"
+            onClick={() => onActivate(profile)}
+            disabled={busyProfile !== null}
+            title={copy.descriptions[profile.id]}
+          >
+            <span>{copy.labels[profile.id]}</span>
+            <small>{profile.learnerName}</small>
+          </button>
+        ))}
+        {active && (
+          <button className="demo-exit" type="button" onClick={onClear} disabled={busyProfile !== null}>
+            {busyProfile === "clear" ? copy.closing : copy.exit}
+          </button>
+        )}
+      </div>
+    </aside>
+  );
+}
 
 function Brand() {
   return (
@@ -61,8 +182,83 @@ function Brand() {
   );
 }
 
-function Header({ view, learner, authenticated, onJoin }: { view: View; learner: Learner; authenticated: boolean; onJoin: () => void }) {
+const headerCopy: Record<StudyLanguage, {
+  nav: Record<string, string>;
+  primaryNavigation: string;
+  mainSite: string;
+  myLearning: string;
+  openDashboard: (name: string) => string;
+  signIn: string;
+  joinFree: string;
+  signOut: string;
+  signingOut: string;
+  signOutError: string;
+  menu: string;
+  openNavigation: string;
+  mobileNavigation: string;
+  account: string;
+  skipContent: string;
+  dismissNotice: string;
+}> = {
+  English: {
+    nav: { Library: "Library", Learn: "Learn", "Jagannatha Dham": "Jagannatha Dham", Membership: "Membership" },
+    primaryNavigation: "Primary navigation",
+    mainSite: "Main site",
+    myLearning: "My learning",
+    openDashboard: (name) => `Open ${name}'s learning dashboard`,
+    signIn: "Sign in",
+    joinFree: "Join free",
+    signOut: "Sign out",
+    signingOut: "Signing out…",
+    signOutError: "We couldn't sign you out. Please try again.",
+    menu: "Menu",
+    openNavigation: "Open navigation",
+    mobileNavigation: "Mobile navigation",
+    account: "Account",
+    skipContent: "Skip to main content",
+    dismissNotice: "Dismiss notification",
+  },
+  Hindi: {
+    nav: { Library: "पुस्तकालय", Learn: "अध्ययन", "Jagannatha Dham": "जगन्नाथ धाम", Membership: "सदस्यता" },
+    primaryNavigation: "मुख्य मार्गदर्शन",
+    mainSite: "मुख्य वेबसाइट",
+    myLearning: "मेरा अध्ययन",
+    openDashboard: (name) => `${name} का अध्ययन डैशबोर्ड खोलें`,
+    signIn: "साइन इन",
+    joinFree: "निःशुल्क जुड़ें",
+    signOut: "साइन आउट",
+    signingOut: "साइन आउट हो रहा है…",
+    signOutError: "साइन आउट नहीं हो सका। कृपया पुनः प्रयास करें।",
+    menu: "मेनू",
+    openNavigation: "मार्गदर्शन खोलें",
+    mobileNavigation: "मोबाइल मार्गदर्शन",
+    account: "खाता",
+    skipContent: "मुख्य सामग्री पर जाएँ",
+    dismissNotice: "सूचना बन्द करें",
+  },
+  Odia: {
+    nav: { Library: "ଗ୍ରନ୍ଥାଗାର", Learn: "ଅଧ୍ୟୟନ", "Jagannatha Dham": "ଜଗନ୍ନାଥ ଧାମ", Membership: "ସଦସ୍ୟତା" },
+    primaryNavigation: "ମୁଖ୍ୟ ମାର୍ଗଦର୍ଶନ",
+    mainSite: "ମୁଖ୍ୟ ୱେବସାଇଟ୍",
+    myLearning: "ମୋର ଅଧ୍ୟୟନ",
+    openDashboard: (name) => `${name}ଙ୍କ ଅଧ୍ୟୟନ ଡ୍ୟାସବୋର୍ଡ ଖୋଲନ୍ତୁ`,
+    signIn: "ସାଇନ୍ ଇନ୍",
+    joinFree: "ମାଗଣାରେ ଯୋଗ ଦିଅନ୍ତୁ",
+    signOut: "ସାଇନ୍ ଆଉଟ୍",
+    signingOut: "ସାଇନ୍ ଆଉଟ୍ ହେଉଛି…",
+    signOutError: "ସାଇନ୍ ଆଉଟ୍ ହୋଇପାରିଲା ନାହିଁ। ଦୟାକରି ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ।",
+    menu: "ମେନୁ",
+    openNavigation: "ମାର୍ଗଦର୍ଶନ ଖୋଲନ୍ତୁ",
+    mobileNavigation: "ମୋବାଇଲ୍ ମାର୍ଗଦର୍ଶନ",
+    account: "ଆକାଉଣ୍ଟ",
+    skipContent: "ମୁଖ୍ୟ ବିଷୟବସ୍ତୁକୁ ଯାଆନ୍ତୁ",
+    dismissNotice: "ସୂଚନା ବନ୍ଦ କରନ୍ତୁ",
+  },
+};
+
+function Header({ view, learner, authenticated, onJoin, language = "English" }: { view: View; learner: Learner; authenticated: boolean; onJoin: () => void; language?: StudyLanguage }) {
   const [signingOut, setSigningOut] = useState(false);
+  const copy = headerCopy[language];
 
   const signOut = async () => {
     if (signingOut) return;
@@ -74,7 +270,7 @@ function Header({ view, learner, authenticated, onJoin }: { view: View; learner:
       window.location.replace("/sign-in");
     } catch {
       setSigningOut(false);
-      window.alert("We couldn't sign you out. Please try again.");
+      window.alert(copy.signOutError);
     }
   };
 
@@ -82,39 +278,39 @@ function Header({ view, learner, authenticated, onJoin }: { view: View; learner:
     <header className="site-header">
       <div className="header-inner">
         <Brand />
-        <nav className="desktop-nav" aria-label="Primary navigation">
+        <nav className="desktop-nav" aria-label={copy.primaryNavigation}>
           {navItems.map((item) => (
             <a key={item.label} href={item.href} aria-current={item.views.includes(view) ? "page" : undefined}>
-              {item.label}
+              {copy.nav[item.label]}
             </a>
           ))}
-          <a href="https://livingbliss.org/" className="main-site-link">Main site ↗</a>
+          <a href="https://livingbliss.org/" className="main-site-link">{copy.mainSite} ↗</a>
         </nav>
         <div className="header-actions">
           {authenticated ? (
             <>
-              <a className="profile-button" href="/dashboard" aria-label={`Open ${learner.displayName}'s learning dashboard`}>
+              <a className="profile-button" href="/dashboard" aria-label={copy.openDashboard(learner.displayName)}>
                 <span>{learner.displayName.slice(0, 1).toUpperCase()}</span>
-                <b>My learning</b>
+                <b>{copy.myLearning}</b>
               </a>
               <button className="header-signout" type="button" onClick={signOut} disabled={signingOut}>
-                {signingOut ? "Signing out…" : "Sign out"}
+                {signingOut ? copy.signingOut : copy.signOut}
               </button>
             </>
           ) : (
             <>
-              <a className="button ghost small" href="/sign-in">Sign in</a>
-              <button className="button primary small" onClick={onJoin}>Join free</button>
+              <a className="button ghost small" href="/sign-in">{copy.signIn}</a>
+              <button className="button primary small" onClick={onJoin}>{copy.joinFree}</button>
             </>
           )}
           <details className="mobile-menu">
-            <summary aria-label="Open navigation">Menu</summary>
-            <nav aria-label="Mobile navigation">
-              {navItems.map((item) => <a key={item.label} href={item.href}>{item.label}</a>)}
-              <a href="/dashboard">My learning</a>
-              <a href="/account">Account</a>
-              {authenticated && <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button>}
-              <a href="https://livingbliss.org/">Main Living Bliss site ↗</a>
+            <summary aria-label={copy.openNavigation}>{copy.menu}</summary>
+            <nav aria-label={copy.mobileNavigation}>
+              {navItems.map((item) => <a key={item.label} href={item.href}>{copy.nav[item.label]}</a>)}
+              <a href="/dashboard">{copy.myLearning}</a>
+              <a href="/account">{copy.account}</a>
+              {authenticated && <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? copy.signingOut : copy.signOut}</button>}
+              <a href="https://livingbliss.org/">{copy.mainSite} ↗</a>
             </nav>
           </details>
         </div>
@@ -123,36 +319,103 @@ function Header({ view, learner, authenticated, onJoin }: { view: View; learner:
   );
 }
 
-function Footer() {
+const footerCopy: Record<StudyLanguage, {
+  description: string;
+  explore: string;
+  scriptureLibrary: string;
+  guidedLearning: string;
+  membership: string;
+  about: string;
+  resources: string;
+  contact: string;
+  trust: string;
+  sourceAware: string;
+  scholarReview: string;
+  accessibility: string;
+  copyright: string;
+  mantra: string;
+}> = {
+  English: {
+    description: "Authentic spiritual knowledge made accessible across cultures, traditions and geographical boundaries.",
+    explore: "Explore",
+    scriptureLibrary: "Scripture library",
+    guidedLearning: "Guided learning",
+    membership: "Membership",
+    about: "About",
+    resources: "Resources",
+    contact: "Contact",
+    trust: "Trust",
+    sourceAware: "Source-aware publishing",
+    scholarReview: "Scholar review workflow",
+    accessibility: "WCAG 2.2 AA target",
+    copyright: "© 2026 Living Bliss. All rights reserved.",
+    mantra: "ॐ श्री गुरुभ्यो नमः · ॐ श्री परमात्मने नमः",
+  },
+  Hindi: {
+    description: "प्रामाणिक आध्यात्मिक ज्ञान को संस्कृतियों, परम्पराओं और भौगोलिक सीमाओं के पार सुलभ बनाया गया है।",
+    explore: "अन्वेषण",
+    scriptureLibrary: "शास्त्र पुस्तकालय",
+    guidedLearning: "मार्गदर्शित अध्ययन",
+    membership: "सदस्यता",
+    about: "हमारे विषय में",
+    resources: "संसाधन",
+    contact: "सम्पर्क",
+    trust: "विश्वसनीयता",
+    sourceAware: "स्रोत-सचेत प्रकाशन",
+    scholarReview: "विद्वान समीक्षा प्रक्रिया",
+    accessibility: "WCAG २.२ AA लक्ष्य",
+    copyright: "© २०२६ Living Bliss. सर्वाधिकार सुरक्षित।",
+    mantra: "ॐ श्री गुरुभ्यो नमः · ॐ श्री परमात्मने नमः",
+  },
+  Odia: {
+    description: "ପ୍ରାମାଣିକ ଆଧ୍ୟାତ୍ମିକ ଜ୍ଞାନକୁ ସଂସ୍କୃତି, ପରମ୍ପରା ଓ ଭୌଗୋଳିକ ସୀମା ଅତିକ୍ରମ କରି ସମସ୍ତଙ୍କ ପାଇଁ ସହଜଲଭ୍ୟ କରାଯାଉଛି।",
+    explore: "ଅନ୍ୱେଷଣ",
+    scriptureLibrary: "ଶାସ୍ତ୍ର ଗ୍ରନ୍ଥାଗାର",
+    guidedLearning: "ମାର୍ଗଦର୍ଶିତ ଅଧ୍ୟୟନ",
+    membership: "ସଦସ୍ୟତା",
+    about: "ଆମ ବିଷୟରେ",
+    resources: "ସମ୍ବଳ",
+    contact: "ଯୋଗାଯୋଗ",
+    trust: "ବିଶ୍ୱସନୀୟତା",
+    sourceAware: "ଉତ୍ସ-ସଚେତନ ପ୍ରକାଶନ",
+    scholarReview: "ବିଦ୍ୱାନ ସମୀକ୍ଷା ପ୍ରକ୍ରିୟା",
+    accessibility: "WCAG ୨.୨ AA ଲକ୍ଷ୍ୟ",
+    copyright: "© ୨୦୨୬ Living Bliss. ସମସ୍ତ ଅଧିକାର ସଂରକ୍ଷିତ।",
+    mantra: "ଓଁ ଶ୍ରୀ ଗୁରୁଭ୍ୟୋ ନମଃ · ଓଁ ଶ୍ରୀ ପରମାତ୍ମନେ ନମଃ",
+  },
+};
+
+function Footer({ language = "English" }: { language?: StudyLanguage }) {
+  const copy = footerCopy[language];
   return (
     <footer className="site-footer">
       <div className="footer-grid">
         <div>
           <Brand />
-          <p>Authentic spiritual knowledge made accessible across cultures, traditions and geographical boundaries.</p>
+          <p>{copy.description}</p>
         </div>
         <div>
-          <strong>Explore</strong>
-          <a href="/library">Scripture library</a>
-          <a href="/course/gita">Guided learning</a>
-          <a href="/membership">Membership</a>
+          <strong>{copy.explore}</strong>
+          <a href="/library">{copy.scriptureLibrary}</a>
+          <a href="/course/gita">{copy.guidedLearning}</a>
+          <a href="/membership">{copy.membership}</a>
         </div>
         <div>
           <strong>Living Bliss</strong>
-          <a href="https://livingbliss.org/about">About</a>
-          <a href="https://livingbliss.org/resources">Resources</a>
-          <a href="https://livingbliss.org/contact">Contact</a>
+          <a href="https://livingbliss.org/about">{copy.about}</a>
+          <a href="https://livingbliss.org/resources">{copy.resources}</a>
+          <a href="https://livingbliss.org/contact">{copy.contact}</a>
         </div>
         <div>
-          <strong>Trust</strong>
-          <span>Source-aware publishing</span>
-          <span>Scholar review workflow</span>
-          <span>WCAG 2.2 AA target</span>
+          <strong>{copy.trust}</strong>
+          <span>{copy.sourceAware}</span>
+          <span>{copy.scholarReview}</span>
+          <span>{copy.accessibility}</span>
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2026 Living Bliss. All rights reserved.</span>
-        <span>ॐ श्री गुरुभ्यो नमः · ॐ श्री परमात्मने नमः</span>
+        <span>{copy.copyright}</span>
+        <span>{copy.mantra}</span>
       </div>
     </footer>
   );
@@ -177,6 +440,8 @@ function CollectionCard({ item }: { item: (typeof collections)[number] }) {
 
 function HomeView({ learner, onJoin }: { learner: Learner; onJoin: () => void }) {
   const [search, setSearch] = useState("");
+  const chapterStudyComplete = chapterTwoStudyComplete(learner);
+  const nextLearningHref = learner.completedLessons.length ? nextChapterTwoHref(learner) : "/course/gita";
   const submit = (event: FormEvent) => {
     event.preventDefault();
     window.location.href = `/library?search=${encodeURIComponent(search)}`;
@@ -219,9 +484,9 @@ function HomeView({ learner, onJoin }: { learner: Learner; onJoin: () => void })
             <div>
               <span className="eyebrow">Welcome back, {learner.displayName}</span>
               <h2>{learner.completedLessons.length ? "Continue where you left off" : "Your learning path is ready"}</h2>
-              <p>{learner.completedLessons.length ? "Bhagavad Gita · Chapter 2 · assessment is the next step" : "Bhagavad Gita Foundations · Chapter 1"}</p>
+              <p>{learner.completedLessons.length ? chapterStudyComplete ? "Bhagavad Gita · Chapter 2 · assessment is the next step" : "Bhagavad Gita · Chapter 2 · continue to the next shloka" : "Bhagavad Gita Foundations · Chapter 1"}</p>
             </div>
-            <a className="button primary" href={learner.completedLessons.length ? "/assessment/gita-2" : "/course/gita"}>Resume learning</a>
+            <a className="button primary" href={nextLearningHref}>Resume learning</a>
           </div>
         </section>
       )}
@@ -302,7 +567,11 @@ function LibraryView({ initialSearch }: { initialSearch: string }) {
 }
 
 function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void }) {
-  const complete = learner.completedLessons.includes("gita-2-47");
+  const completedShlokas = completedChapterTwoShlokas(learner);
+  const chapterStudyComplete = chapterTwoStudyComplete(learner);
+  const progress = completedShlokas * 4;
+  const primaryHref = completedShlokas ? nextChapterTwoHref(learner) : "/course/gita/foundations";
+  const primaryLabel = chapterStudyComplete ? "Begin chapter assessment" : completedShlokas ? "Continue to next shloka" : "Begin with foundations";
   return (
     <main className="page-main">
       <section className="course-hero">
@@ -314,16 +583,16 @@ function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void 
             <p>A chapter-by-chapter introduction that keeps the original scripture visible while offering accessible explanation, reflection and knowledge checks.</p>
             <div className="course-facts"><span>18 chapters</span><span>12–16 hours</span><span>Video + slides + text</span><span>60% pass mark</span></div>
             <div className="hero-actions">
-              <a className="button saffron" href={complete ? "/assessment/gita-2" : "/lesson/gita-2-47"}>{complete ? "Continue to assessment" : "Start with Chapter 1"}</a>
+              <a className="button saffron" href={primaryHref}>{primaryLabel}</a>
               {!learner.memberJoined && <button className="button outline-light" onClick={onJoin}>Join free to save progress</button>}
             </div>
           </div>
           <aside className="course-progress-card">
-            <div className="progress-orbit"><strong>{complete ? "8" : "0"}%</strong><span>course progress</span></div>
+            <div className="progress-orbit"><strong>{progress}%</strong><span>course progress</span></div>
             <h2>{learner.memberJoined ? `Namaste, ${learner.displayName}` : "Begin when you are ready"}</h2>
-            <p>{complete ? "One lesson is complete. Your Chapter 2 assessment is ready." : "Your first lesson introduces the setting, Arjuna’s question and the discipline of action."}</p>
-            <div className="mini-progress"><span style={{ width: complete ? "8%" : "0%" }} /></div>
-            <small>{complete ? "1 learning unit complete" : "Progress begins after your first lesson"}</small>
+            <p>{chapterStudyComplete ? "The prescribed Chapter 2 shlokas are complete. The chapter assessment is ready." : completedShlokas ? "Continue shloka by shloka. Assessment remains at the end of the chapter." : "Begin with the shared context, verse layers and readiness pathway before Chapter 1."}</p>
+            <div className="mini-progress"><span style={{ width: `${progress}%` }} /></div>
+            <small>{completedShlokas ? `${completedShlokas} of ${chapterTwoShlokaIds.length} pilot shlokas complete` : "Progress begins after your first shloka"}</small>
           </aside>
         </div>
       </section>
@@ -331,14 +600,14 @@ function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void 
         <div>
           <div className="section-heading"><div><span className="eyebrow">Course pathway</span><h2>Learn chapter by chapter</h2></div><span className="pass-chip">Pass mark 60%</span></div>
           <div className="chapter-list">
-            {chapters.map((chapter, index) => {
-              const available = index < 2;
+            {gitaChapters.map((chapter) => {
+              const available = chapter.status === "available";
               return (
-                <article key={chapter} className={`chapter-row ${index === 1 ? "featured" : ""}`}>
-                  <span className="chapter-number">{String(index + 1).padStart(2, "0")}</span>
-                  <div><h3>{chapter}</h3><p>{index === 0 ? "The human difficulty · context and reflection" : index === 1 ? "Self-knowledge, steady wisdom and right action" : "Structured lesson content in editorial preparation"}</p></div>
+                <article key={chapter.number} className={`chapter-row ${available ? "featured" : ""}`}>
+                  <span className="chapter-number">{String(chapter.number).padStart(2, "0")}</span>
+                  <div><h3>{chapter.title}</h3><p>{chapter.focus}</p></div>
                   <div className="chapter-state">
-                    {index === 1 && complete ? <span className="passed">Lesson complete</span> : available ? <a href={index === 1 ? "/lesson/gita-2-47" : "/lesson/gita-2-47"}>{index === 1 ? "Open chapter" : "Preview"} →</a> : <span>Planned</span>}
+                    {available && chapterStudyComplete ? <><span className="passed">Chapter study complete</span><a href="/lesson/gita-2-47">Review shlokas →</a></> : available && completedShlokas ? <><span>{completedShlokas} of {chapterTwoShlokaIds.length} shlokas</span><a href={nextChapterTwoHref(learner)}>Continue →</a></> : <a href={`/course/gita/chapter/${chapter.slug}`}>{available ? "Open chapter" : "Preview chapter"} →</a>}
                   </div>
                 </article>
               );
@@ -346,7 +615,7 @@ function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void 
           </div>
         </div>
         <aside className="course-side">
-          <div className="side-card"><span className="eyebrow">How achievement works</span><ol><li>Complete required lessons</li><li>Take the chapter assessment</li><li>Score 60% or higher</li><li>Receive a chapter badge</li></ol></div>
+          <div className="side-card"><span className="eyebrow">How achievement works</span><ol><li>Complete the prescribed shlokas</li><li>Take the end-of-chapter assessment</li><li>Score 60% or higher</li><li>Receive a chapter badge</li></ol></div>
           <div className="side-card source-card"><span>✓</span><h3>Source-aware learning</h3><p>Scripture, translation, commentary and modern explanation are shown as distinct layers.</p><a href="/library">View editorial standards →</a></div>
         </aside>
       </section>
@@ -354,62 +623,207 @@ function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void 
   );
 }
 
-function LessonView({ learner, save, saving, onJoin }: { learner: Learner; save: (payload: Record<string, unknown>) => Promise<void>; saving: boolean; onJoin: () => void }) {
-  const [tab, setTab] = useState("video");
-  const completed = learner.completedLessons.includes("gita-2-47");
-  const markComplete = async () => {
+const shlokaNextHref: Record<ShlokaReference, string> = {
+  "2.47": "/lesson/gita-2-48",
+  "2.48": "/assessment/gita-2",
+};
+
+const lessonCopy: Record<StudyLanguage, {
+  courseOverview: string;
+  courseName: string;
+  chapterLine: string;
+  chapterName: string;
+  progress: (completed: string, total: string) => string;
+  shloka: string;
+  afterChapter: string;
+  assessment: string;
+  navigationAria: string;
+  scene: string;
+  context: Record<ShlokaReference, string>;
+  progressLabel: string;
+  completedTitle: (reference: string) => string;
+  completeTitle: (reference: string) => string;
+  completionCopy: Record<ShlokaReference, string>;
+  nextLabel: Record<ShlokaReference, string>;
+  saving: string;
+}> = {
+  English: {
+    courseOverview: "Course overview",
+    courseName: "Bhagavad Gita",
+    chapterLine: "Chapter 2",
+    chapterName: "Sāṅkhya Yoga",
+    progress: (completed, total) => `${completed} of ${total} pilot shlokas complete`,
+    shloka: "Shloka",
+    afterChapter: "After chapter study",
+    assessment: "Assessment",
+    navigationAria: "Chapter 2 shloka navigation",
+    scene: "Scene and context",
+    context: {
+      "2.47": "On the battlefield of Kurukṣetra, Arjuna remains uncertain about action and consequence. Krishna explains that the learner is responsible for sincere action, but cannot claim control over every result.",
+      "2.48": "Krishna continues his response to Arjuna by explaining the inner discipline of action: remain steady in both success and failure, without attachment to either outcome.",
+    },
+    progressLabel: "Shloka-by-shloka progress",
+    completedTitle: (reference) => `Shloka ${reference} is complete`,
+    completeTitle: (reference) => `Complete Shloka ${reference}`,
+    completionCopy: {
+      "2.47": "Complete this study before moving to the next shloka. The assessment remains at the end of the chapter.",
+      "2.48": "The chapter assessment appears only after every prescribed shloka in the chapter has been completed.",
+    },
+    nextLabel: {
+      "2.47": "Complete study and continue to Shloka 2.48",
+      "2.48": "Complete chapter study and open assessment",
+    },
+    saving: "Saving progress…",
+  },
+  Hindi: {
+    courseOverview: "पाठ्यक्रम पर लौटें",
+    courseName: "भगवद्गीता",
+    chapterLine: "अध्याय २",
+    chapterName: "सांख्य योग",
+    progress: (completed, total) => `${total} में से ${completed} पायलट श्लोक पूर्ण`,
+    shloka: "श्लोक",
+    afterChapter: "अध्याय के अध्ययन के बाद",
+    assessment: "मूल्यांकन",
+    navigationAria: "अध्याय २ के श्लोकों का मार्गदर्शन",
+    scene: "दृश्य और प्रसंग",
+    context: {
+      "2.47": "कुरुक्षेत्र की युद्धभूमि में अर्जुन कर्म और उसके परिणाम को लेकर दुविधा में हैं। श्रीकृष्ण समझाते हैं कि विद्यार्थी का दायित्व निष्ठापूर्वक कर्म करना है, पर प्रत्येक परिणाम पर नियंत्रण का दावा करना नहीं।",
+      "2.48": "श्रीकृष्ण अर्जुन को कर्म के आंतरिक अनुशासन की शिक्षा आगे बढ़ाते हैं—सफलता और असफलता, दोनों में आसक्ति छोड़कर स्थिर रहना।",
+    },
+    progressLabel: "श्लोक-दर-श्लोक प्रगति",
+    completedTitle: (reference) => `श्लोक ${reference} पूर्ण हो गया है`,
+    completeTitle: (reference) => `श्लोक ${reference} का अध्ययन पूर्ण करें`,
+    completionCopy: {
+      "2.47": "अगले श्लोक पर जाने से पहले यह अध्ययन पूर्ण करें। मूल्यांकन अध्याय के अंत में ही होगा।",
+      "2.48": "अध्याय के सभी निर्धारित श्लोक पूर्ण होने के बाद ही अध्याय का मूल्यांकन उपलब्ध होगा।",
+    },
+    nextLabel: {
+      "2.47": "अध्ययन पूर्ण करके श्लोक २.४८ पर जाएँ",
+      "2.48": "अध्याय का अध्ययन पूर्ण करके मूल्यांकन खोलें",
+    },
+    saving: "प्रगति सहेजी जा रही है…",
+  },
+  Odia: {
+    courseOverview: "ପାଠ୍ୟକ୍ରମକୁ ଫେରନ୍ତୁ",
+    courseName: "ଭଗବଦ୍ ଗୀତା",
+    chapterLine: "ଅଧ୍ୟାୟ ୨",
+    chapterName: "ସାଂଖ୍ୟ ଯୋଗ",
+    progress: (completed, total) => `${total}ଟି ମଧ୍ୟରୁ ${completed}ଟି ପାଇଲଟ୍ ଶ୍ଲୋକ ସମ୍ପୂର୍ଣ୍ଣ`,
+    shloka: "ଶ୍ଲୋକ",
+    afterChapter: "ଅଧ୍ୟାୟ ଅଧ୍ୟୟନ ପରେ",
+    assessment: "ମୂଲ୍ୟାୟନ",
+    navigationAria: "ଅଧ୍ୟାୟ ୨ ଶ୍ଲୋକ ମାର୍ଗଦର୍ଶନ",
+    scene: "ଦୃଶ୍ୟ ଓ ପ୍ରସଙ୍ଗ",
+    context: {
+      "2.47": "କୁରୁକ୍ଷେତ୍ର ଯୁଦ୍ଧଭୂମିରେ ଅର୍ଜୁନ କର୍ମ ଓ ତାହାର ଫଳକୁ ନେଇ ଦ୍ୱନ୍ଦ୍ୱରେ ଅଛନ୍ତି। ଶ୍ରୀକୃଷ୍ଣ ବୁଝାଉଛନ୍ତି ଯେ ଶିକ୍ଷାର୍ଥୀଙ୍କ ଦାୟିତ୍ୱ ହେଉଛି ନିଷ୍ଠାର ସହ କର୍ମ କରିବା, କିନ୍ତୁ ପ୍ରତ୍ୟେକ ଫଳ ଉପରେ ନିୟନ୍ତ୍ରଣ ଦାବି କରିବା ନୁହେଁ।",
+      "2.48": "ଶ୍ରୀକୃଷ୍ଣ ଅର୍ଜୁନଙ୍କୁ କର୍ମର ଆନ୍ତରିକ ଶୃଙ୍ଖଳା ବିଷୟରେ ଆହୁରି ବୁଝାଉଛନ୍ତି—ସଫଳତା ଓ ବିଫଳତା ଉଭୟରେ ଆସକ୍ତି ତ୍ୟାଗ କରି ସ୍ଥିର ରହିବା।",
+    },
+    progressLabel: "ଶ୍ଲୋକ ଅନୁସାରେ ପ୍ରଗତି",
+    completedTitle: (reference) => `ଶ୍ଲୋକ ${reference} ସମ୍ପୂର୍ଣ୍ଣ ହୋଇଛି`,
+    completeTitle: (reference) => `ଶ୍ଲୋକ ${reference} ଅଧ୍ୟୟନ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ`,
+    completionCopy: {
+      "2.47": "ପରବର୍ତ୍ତୀ ଶ୍ଲୋକକୁ ଯିବା ପୂର୍ବରୁ ଏହି ଅଧ୍ୟୟନ ସମ୍ପୂର୍ଣ୍ଣ କରନ୍ତୁ। ମୂଲ୍ୟାୟନ ଅଧ୍ୟାୟର ଶେଷରେ ରହିବ।",
+      "2.48": "ଅଧ୍ୟାୟର ସମସ୍ତ ନିର୍ଦ୍ଧାରିତ ଶ୍ଲୋକ ସମ୍ପୂର୍ଣ୍ଣ ହେବା ପରେ ମାତ୍ର ଅଧ୍ୟାୟ ମୂଲ୍ୟାୟନ ଉପଲବ୍ଧ ହେବ।",
+    },
+    nextLabel: {
+      "2.47": "ଅଧ୍ୟୟନ ସମ୍ପୂର୍ଣ୍ଣ କରି ଶ୍ଲୋକ ୨.୪୮କୁ ଯାଆନ୍ତୁ",
+      "2.48": "ଅଧ୍ୟାୟ ଅଧ୍ୟୟନ ସମ୍ପୂର୍ଣ୍ଣ କରି ମୂଲ୍ୟାୟନ ଖୋଲନ୍ତୁ",
+    },
+    saving: "ପ୍ରଗତି ସଂରକ୍ଷଣ ହେଉଛି…",
+  },
+};
+
+function LessonView({
+  learner,
+  save,
+  saving,
+  onJoin,
+  reference,
+  language,
+  onLanguageChange,
+}: {
+  learner: Learner;
+  save: (payload: Record<string, unknown>) => Promise<boolean>;
+  saving: boolean;
+  onJoin: () => void;
+  reference: ShlokaReference;
+  language: StudyLanguage;
+  onLanguageChange: (language: StudyLanguage) => void;
+}) {
+  const copy = lessonCopy[language];
+  const localReference = localizeStudyDigits(reference, language);
+  const localCompleted = localizeStudyDigits(completedChapterTwoShlokas(learner), language);
+  const localTotal = localizeStudyDigits(chapterTwoShlokaIds.length, language);
+  const lessonId = `gita-${reference.replace(".", "-")}`;
+  const completed = learner.completedLessons.includes(lessonId);
+  const completedShlokas = completedChapterTwoShlokas(learner);
+  const chapterComplete = chapterTwoStudyComplete(learner);
+  const nextHref = `${shlokaNextHref[reference]}?language=${language}`;
+
+  const completeAndContinue = async () => {
     if (!learner.memberJoined) { onJoin(); return; }
-    await save({ action: "completeLesson", lessonId: "gita-2-47" });
+    if (!completed && !(await save({ action: "completeLesson", lessonId }))) return;
+    window.location.href = nextHref;
   };
+
   return (
-    <main className="page-main lesson-page">
+    <main className="page-main lesson-page compact-shloka-page" lang={language === "Odia" ? "or" : language === "Hindi" ? "hi" : "en"}>
       <div className="lesson-shell">
-        <aside className="lesson-nav">
-          <a className="back-link" href="/course/gita">← Course overview</a>
-          <span className="eyebrow">Bhagavad Gita</span>
-          <h2>Chapter 2<br />Sāṅkhya Yoga</h2>
-          <div className="lesson-progress"><span style={{ width: completed ? "100%" : "35%" }} /></div>
-          <small>{completed ? "Required lesson complete" : "1 of 3 activities viewed"}</small>
-          <nav aria-label="Chapter lesson navigation">
-            <a className="done" href="#context"><span>✓</span><div><small>Lesson 1</small><strong>Arjuna’s question</strong></div></a>
-            <a className="active" href="#lesson"><span>2</span><div><small>Lesson 2</small><strong>Right to action</strong></div></a>
-            <a href="#reflection"><span>3</span><div><small>Lesson 3</small><strong>Steady wisdom</strong></div></a>
-            <a className={completed ? "" : "locked"} href={completed ? "/assessment/gita-2" : "#assessment-locked"}><span>◎</span><div><small>Chapter test</small><strong>Assessment</strong></div></a>
+        <aside className="lesson-nav compact-lesson-nav">
+          <a className="back-link" href="/course/gita">← {copy.courseOverview}</a>
+          <span className="eyebrow">{copy.courseName}</span>
+          <h2>{copy.chapterLine}<br />{copy.chapterName}</h2>
+          <div className="lesson-progress"><span style={{ width: `${(completedShlokas / chapterTwoShlokaIds.length) * 100}%` }} /></div>
+          <small>{copy.progress(localCompleted, localTotal)}</small>
+          <nav aria-label={copy.navigationAria}>
+            {(["2.47", "2.48"] as ShlokaReference[]).map((item) => {
+              const itemId = `gita-${item.replace(".", "-")}`;
+              const itemComplete = learner.completedLessons.includes(itemId);
+              return <a key={item} className={item === reference ? "active" : itemComplete ? "done" : ""} href={`/lesson/gita-${item.replace(".", "-")}?language=${language}`}><span>{itemComplete ? "✓" : localizeStudyDigits(item.split(".")[1], language)}</span><div><small>{copy.shloka}</small><strong>{localizeStudyDigits(item, language)}</strong></div></a>;
+            })}
+            <a className={chapterComplete ? "" : "locked"} href={chapterComplete ? "/assessment/gita-2" : "#chapter-assessment"}><span>◎</span><div><small>{copy.afterChapter}</small><strong>{copy.assessment}</strong></div></a>
           </nav>
         </aside>
-        <section className="lesson-content" id="lesson">
-          <div className="lesson-heading">
-            <div><span className="eyebrow">Lesson 2 of 3 · 18 minutes</span><h1>Right to action</h1><p>Understand Gita 2.47 without separating the teaching from its original scriptural context.</p></div>
-            <button className="bookmark-button" aria-label="Bookmark lesson">☆ Bookmark</button>
+
+        <section className="lesson-content compact-lesson-content" id="lesson">
+          <header className="compact-lesson-heading">
+            <div className="compact-lesson-identity">
+              <span className="eyebrow">{copy.courseName}</span>
+              <div><h1>{copy.chapterLine} · {copy.chapterName}</h1><strong>{copy.shloka} {localReference}</strong></div>
+            </div>
+            <p><span>{copy.scene}</span>{copy.context[reference]}</p>
+          </header>
+
+          <ShlokaStudyPanel language={language} onLanguageChange={onLanguageChange} reference={reference} />
+
+          <div className="shloka-completion-card" id="chapter-assessment">
+            <div>
+              <span className="eyebrow">{copy.progressLabel}</span>
+              <strong>{completed ? copy.completedTitle(localReference) : copy.completeTitle(localReference)}</strong>
+              <p>{copy.completionCopy[reference]}</p>
+            </div>
+            {completed ? <a className="button primary" href={nextHref}>{copy.nextLabel[reference]} →</a> : <button className="button primary" type="button" onClick={completeAndContinue} disabled={saving}>{saving ? copy.saving : copy.nextLabel[reference]}</button>}
           </div>
-          <div className="media-tabs" role="tablist" aria-label="Learning format">
-            {["video", "slides", "verse"].map((value) => <button key={value} role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value === "video" ? "▶ Video overview" : value === "slides" ? "▤ Study slides" : "ॐ Verse & meaning"}</button>)}
-          </div>
-          {tab === "video" && <div className="video-panel" role="tabpanel"><div className="video-cover"><button aria-label="Play lesson video">▶</button><div><span>8:24</span><strong>Action, responsibility and the result</strong><small>Captions and transcript available</small></div></div><div className="media-tools"><button>CC Captions</button><button>Transcript</button><button>Playback speed</button><span>Reviewed learning media</span></div></div>}
-          {tab === "slides" && <div className="slides-panel" role="tabpanel"><span className="slide-count">Slide 2 of 6</span><div className="slide-inner"><span className="eyebrow">Three distinctions</span><h2>Action is yours.<br />The result is not yours alone.</h2><div className="slide-points"><span>Intention</span><span>Skilful effort</span><span>Non-attachment</span></div></div><div className="slide-nav"><button aria-label="Previous slide">←</button><div><span className="active" /><span /><span /><span /><span /><span /></div><button aria-label="Next slide">→</button></div></div>}
-          {tab === "verse" && <article className="verse-panel" role="tabpanel"><div className="verse-tools"><span className="verified">Verified source text</span><button>देवनागरी</button><button>IAST</button><button>🔊 Listen</button></div><p className="devanagari" lang="sa">कर्मण्येवाधिकारस्ते मा फलेषु कदाचन।<br />मा कर्मफलहेतुर्भूर्मा ते सङ्गोऽस्त्वकर्मणि॥</p><p className="transliteration">karmaṇy evādhikāras te mā phaleṣu kadācana<br />mā karma-phala-hetur bhūr mā te saṅgo ’stv akarmaṇi</p><div className="meaning-grid"><div><strong>Plain-language meaning</strong><p>Your responsibility is to act with care and integrity. Do not treat the result as entirely yours, and do not use uncertainty about results as a reason to avoid right action.</p></div><div><strong>Source</strong><p>Bhagavad Gita 2.47 · source edition and reviewer information shown in the publication record.</p></div></div></article>}
-          <section className="reflection-card" id="reflection"><span className="eyebrow">Private reflection · optional</span><h2>Where can you give full effort without trying to control every outcome?</h2><textarea aria-label="Private reflection" placeholder="Write a private note for your own learning…" /><small>Private reflections are never shown on certificates or public profiles.</small></section>
-          <div className="lesson-complete"><div><strong>{completed ? "Lesson completed" : "Ready to continue?"}</strong><p>{completed ? "Your progress is saved. The chapter assessment is now available." : "Mark this lesson complete after you have viewed one format and read the verse meaning."}</p></div>{completed ? <a className="button primary" href="/assessment/gita-2">Take chapter assessment</a> : <button className="button primary" onClick={markComplete} disabled={saving}>{saving ? "Saving…" : "Mark lesson complete"}</button>}</div>
         </section>
       </div>
     </main>
   );
 }
 
-function AssessmentView({ learner, save, saving, onJoin }: { learner: Learner; save: (payload: Record<string, unknown>) => Promise<void>; saving: boolean; onJoin: () => void }) {
+function AssessmentView({ learner, save, saving, onJoin }: { learner: Learner; save: (payload: Record<string, unknown>) => Promise<boolean>; saving: boolean; onJoin: () => void }) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submittedScore, setSubmittedScore] = useState<number | null>(null);
-  const ready = learner.completedLessons.includes("gita-2-47");
+  const ready = chapterTwoStudyComplete(learner);
   const submit = async () => {
     if (!learner.memberJoined) { onJoin(); return; }
     const correct = questions.reduce((sum, q, index) => sum + (answers[index] === q.correct ? 1 : 0), 0);
     const score = Math.round((correct / questions.length) * 100);
-    await save({ action: "assessment", score });
+    if (!(await save({ action: "assessment", score }))) return;
     setSubmittedScore(score);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   if (!ready && learner.assessmentScore == null) {
-    return <main className="page-main"><section className="locked-page page-shell"><span className="lock-icon">◎</span><span className="eyebrow">Chapter 2 assessment</span><h1>Complete the required lesson first</h1><p>The assessment unlocks when the “Right to action” lesson is marked complete. Reading remains open at all times.</p><a className="button primary" href="/lesson/gita-2-47">Return to the lesson</a></section></main>;
+    return <main className="page-main"><section className="locked-page page-shell"><span className="lock-icon">◎</span><span className="eyebrow">Chapter 2 assessment</span><h1>Complete the chapter study first</h1><p>The assessment unlocks only after every prescribed shloka in Chapter 2 has been completed. Reading remains open at all times.</p><a className="button primary" href={nextChapterTwoHref(learner)}>Continue chapter study</a></section></main>;
   }
   const score = submittedScore ?? learner.assessmentScore;
   if (score != null) {
@@ -426,15 +840,20 @@ function AssessmentView({ learner, save, saving, onJoin }: { learner: Learner; s
 
 function DashboardView({ learner, onJoin }: { learner: Learner; onJoin: () => void }) {
   if (!learner.memberJoined) return <main className="page-main"><section className="locked-page page-shell"><span className="lock-icon">◎</span><span className="eyebrow">Personal learning workspace</span><h1>Your learning belongs together</h1><p>Create a free membership to save lessons, track chapter results and download achievements.</p><button className="button primary" onClick={onJoin}>Join free</button></section></main>;
-  const lessonComplete = learner.completedLessons.includes("gita-2-47");
+  const completedShlokas = completedChapterTwoShlokas(learner);
+  const chapterStudyComplete = chapterTwoStudyComplete(learner);
+  const continueHref = nextChapterTwoHref(learner);
+  const continueHeading = chapterStudyComplete ? "Check your understanding" : completedShlokas ? "Continue shloka study" : "Begin shloka study";
+  const continueLabel = chapterStudyComplete ? "Next: Chapter 2 assessment" : `Chapter 2 · Shloka ${completedShlokas ? "2.48" : "2.47"}`;
+  const continueCopy = chapterStudyComplete ? "Five questions · untimed · 60% pass mark" : "Study the shloka, Sandhi-vicheda, word meanings and selected-language translation.";
   return (
     <main className="page-main dashboard-page">
       <section className="dashboard-welcome"><div className="page-shell"><div><span className="eyebrow">My learning</span><h1>Namaste, {learner.displayName}</h1><p>Continue gently. Your progress is here whenever you return.</p></div><div className="profile-summary"><span>{learner.displayName.slice(0, 1).toUpperCase()}</span><div><strong>{learner.displayName}</strong><small>{learner.preferredLanguage} · {learner.learningMode}</small></div><button onClick={onJoin}>Edit preferences</button></div></div></section>
       <section className="page-shell dashboard-grid">
         <div className="dashboard-main">
           <div className="section-heading"><div><span className="eyebrow">Continue learning</span><h2>Bhagavad Gita: Foundations</h2></div><span className="status-pill">In progress</span></div>
-          <article className="continue-card"><div className="continue-art"><span>गी</span></div><div><small>{lessonComplete ? "Next: Chapter 2 assessment" : "Chapter 2 · Lesson 2"}</small><h3>{lessonComplete ? "Check your understanding" : "Right to action"}</h3><p>{lessonComplete ? "Five questions · untimed · 60% pass mark" : "Continue with video, slides or verse study."}</p><div className="mini-progress"><span style={{ width: lessonComplete ? "8%" : "3%" }} /></div><small>{lessonComplete ? "1 lesson complete" : "Learning started"}</small></div><a className="button primary" href={lessonComplete ? "/assessment/gita-2" : "/lesson/gita-2-47"}>Resume</a></article>
-          <div className="dashboard-panels"><article><span className="eyebrow">Chapter progress</span><div className="chapter-map">{chapters.map((_, index) => <span key={index} className={index === 1 && learner.assessmentPassed ? "passed" : index <= 1 ? "current" : ""}>{index + 1}</span>)}</div><p>{learner.assessmentPassed ? "Chapter 2 passed · badge earned" : "Chapter 2 is currently in progress"}</p></article><article><span className="eyebrow">Learning rhythm</span><div className="activity-bars"><span style={{ height: "24%" }} /><span style={{ height: "52%" }} /><span style={{ height: "38%" }} /><span style={{ height: lessonComplete ? "82%" : "45%" }} /><span style={{ height: "28%" }} /><span style={{ height: "18%" }} /><span style={{ height: "12%" }} /></div><div className="activity-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><p>Progress is measured by completed learning, not time spent on a page.</p></article></div>
+          <article className="continue-card"><div className="continue-art"><span>गी</span></div><div><small>{continueLabel}</small><h3>{continueHeading}</h3><p>{continueCopy}</p><div className="mini-progress"><span style={{ width: chapterStudyComplete ? "8%" : completedShlokas ? "4%" : "2%" }} /></div><small>{completedShlokas} of {chapterTwoShlokaIds.length} shlokas complete</small></div><a className="button primary" href={continueHref}>Resume</a></article>
+          <div className="dashboard-panels"><article><span className="eyebrow">Chapter progress</span><div className="chapter-map">{chapters.map((_, index) => <span key={index} className={index === 1 && learner.assessmentPassed ? "passed" : index <= 1 ? "current" : ""}>{index + 1}</span>)}</div><p>{learner.assessmentPassed ? "Chapter 2 passed · badge earned" : "Chapter 2 is currently in progress"}</p></article><article><span className="eyebrow">Learning rhythm</span><div className="activity-bars"><span style={{ height: "24%" }} /><span style={{ height: "52%" }} /><span style={{ height: "38%" }} /><span style={{ height: completedShlokas ? "82%" : "45%" }} /><span style={{ height: "28%" }} /><span style={{ height: "18%" }} /><span style={{ height: "12%" }} /></div><div className="activity-labels"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div><p>Progress is measured by completed learning, not time spent on a page.</p></article></div>
         </div>
         <aside className="dashboard-side"><div className="side-card achievement-card"><span className="eyebrow">Achievements</span>{learner.assessmentPassed ? <><div className="badge-emblem">✓</div><h3>Sāṅkhya Yoga Explorer</h3><p>Earned with a verified score of {learner.assessmentScore}%.</p><a href="/certificate">View certificate →</a></> : <><div className="badge-emblem muted">◎</div><h3>Your first badge is close</h3><p>Complete the Chapter 2 assessment with 60% or higher.</p></>}</div><div className="side-card"><span className="eyebrow">Saved for you</span><div className="saved-stat"><strong>1</strong><span>bookmarked verse</span></div><div className="saved-stat"><strong>{learner.completedLessons.length}</strong><span>completed lessons</span></div><div className="saved-stat"><strong>{learner.assessmentPassed ? "1" : "0"}</strong><span>earned achievements</span></div></div></aside>
       </section>
@@ -474,11 +893,26 @@ function CertificateView({ learner }: { learner: Learner }) {
   );
 }
 
-export default function LibraryApp({ view, initialSearch = "" }: { view: View; initialSearch?: string }) {
+export default function LibraryApp({
+  view,
+  initialSearch = "",
+  lessonReference = "2.47",
+  initialStudyLanguage,
+}: {
+  view: View;
+  initialSearch?: string;
+  lessonReference?: ShlokaReference;
+  initialStudyLanguage?: StudyLanguage;
+}) {
   const [learner, setLearner] = useState<Learner>(initialLearner);
   const [authenticated, setAuthenticated] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [demoStatus, setDemoStatus] = useState<DemoStatus | null>(null);
+  const [busyDemoProfile, setBusyDemoProfile] = useState<DemoProfileId | "clear" | null>(null);
+  const [studyLanguageOverride, setStudyLanguageOverride] = useState<StudyLanguage | null>(initialStudyLanguage ?? null);
+  const studyLanguage = studyLanguageOverride ?? resolveStudyLanguage(learner.preferredLanguage);
+  const pageLanguage = view === "lesson" ? studyLanguage : "English";
 
   useEffect(() => {
     fetch("/api/progress")
@@ -488,7 +922,43 @@ export default function LibraryApp({ view, initialSearch = "" }: { view: View; i
         if (data.learner) setLearner(data.learner);
       })
       .catch(() => setNotice("Progress will reconnect automatically when the service is available."));
+
+    fetch("/api/demo/session")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((data: DemoStatus) => setDemoStatus(data))
+      .catch(() => undefined);
   }, []);
+
+  const activateDemo = async (profile: DemoProfileSummary) => {
+    setBusyDemoProfile(profile.id);
+    setNotice("");
+    try {
+      const response = await fetch("/api/demo/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profileId: profile.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      window.location.href = profile.startPath;
+    } catch {
+      setBusyDemoProfile(null);
+      setNotice("The test profile could not be loaded. Please try again.");
+    }
+  };
+
+  const clearDemo = async () => {
+    setBusyDemoProfile("clear");
+    setNotice("");
+    try {
+      const response = await fetch("/api/demo/session", { method: "DELETE" });
+      if (!response.ok) throw new Error("Unable to close the demo.");
+      window.location.href = "/";
+    } catch {
+      setBusyDemoProfile(null);
+      setNotice("The test profile could not be closed. Please try again.");
+    }
+  };
 
   const save = async (payload: Record<string, unknown>) => {
     setSaving(true);
@@ -498,13 +968,15 @@ export default function LibraryApp({ view, initialSearch = "" }: { view: View; i
       const data = await response.json();
       if (response.status === 401) {
         window.location.href = `/sign-in?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-        return;
+        return false;
       }
       if (!response.ok) throw new Error(data.error);
       setLearner(data.learner);
       setNotice("Your progress has been saved.");
+      return true;
     } catch {
       setNotice("We could not save this update. Please try again.");
+      return false;
     } finally { setSaving(false); }
   };
 
@@ -515,22 +987,38 @@ export default function LibraryApp({ view, initialSearch = "" }: { view: View; i
       : `/sign-in?returnTo=${encodeURIComponent(returnTo)}`;
   };
 
+  const changeStudyLanguage = (nextLanguage: StudyLanguage) => {
+    setStudyLanguageOverride(nextLanguage);
+    const url = new URL(window.location.href);
+    url.searchParams.set("language", nextLanguage);
+    window.history.replaceState({}, "", url);
+  };
+
   return (
-    <div className="site-root">
-      <a className="skip-link" href="#main-content">Skip to main content</a>
-      <Header view={view} learner={learner} authenticated={authenticated} onJoin={join} />
+    <div className="site-root" lang={pageLanguage === "Odia" ? "or" : pageLanguage === "Hindi" ? "hi" : "en"}>
+      <a className="skip-link" href="#main-content">{headerCopy[pageLanguage].skipContent}</a>
+      {demoStatus && (
+        <DemoToolbar
+          status={demoStatus}
+          busyProfile={busyDemoProfile}
+          onActivate={activateDemo}
+          onClear={clearDemo}
+          language={pageLanguage}
+        />
+      )}
+      <Header view={view} learner={learner} authenticated={authenticated} onJoin={join} language={pageLanguage} />
       <div id="main-content">
         {view === "home" && <HomeView learner={learner} onJoin={join} />}
         {view === "library" && <LibraryView initialSearch={initialSearch} />}
         {view === "course" && <CourseView learner={learner} onJoin={join} />}
-        {view === "lesson" && <LessonView learner={learner} save={save} saving={saving} onJoin={join} />}
+        {view === "lesson" && <LessonView learner={learner} save={save} saving={saving} onJoin={join} reference={lessonReference} language={studyLanguage} onLanguageChange={changeStudyLanguage} />}
         {view === "assessment" && <AssessmentView learner={learner} save={save} saving={saving} onJoin={join} />}
         {view === "dashboard" && <DashboardView learner={learner} onJoin={join} />}
         {view === "membership" && <MembershipView learner={learner} onJoin={join} />}
         {view === "certificate" && <CertificateView learner={learner} />}
       </div>
-      <Footer />
-      {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss notification">×</button></div>}
+      <Footer language={pageLanguage} />
+      {notice && <div className="toast" role="status"><span>{notice}</span><button onClick={() => setNotice("")} aria-label={headerCopy[pageLanguage].dismissNotice}>×</button></div>}
     </div>
   );
 }

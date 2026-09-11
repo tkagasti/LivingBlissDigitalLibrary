@@ -145,13 +145,20 @@ export type OidcCompletion =
   | { kind: "verify-email"; challengeId: string; email: string; returnTo: string };
 
 export async function finishOidc(provider: OidcProvider, request: Request): Promise<OidcCompletion> {
-  const url = new URL(request.url);
-  const state = url.searchParams.get("state");
+  const incomingUrl = new URL(request.url);
+  const state = incomingUrl.searchParams.get("state");
   if (!state) throw new AuthError("The identity provider did not return a valid state.");
   const saved = await transaction(state, provider);
   const payload = decryptJson<TransactionPayload>(saved.payload_encrypted);
   const config = await configuration(provider);
-  const tokens = await oidc.authorizationCodeGrant(config, url, {
+
+  // Always send the same redirect URI during the token exchange that was used
+  // for the authorization request. Reverse proxies and local server bindings can
+  // expose the callback request as 0.0.0.0 even though Google returned to
+  // localhost, causing an otherwise valid authorization code to be rejected.
+  const authorizationResponseUrl = new URL(callbackUrl(provider));
+  authorizationResponseUrl.search = incomingUrl.search;
+  const tokens = await oidc.authorizationCodeGrant(config, authorizationResponseUrl, {
     pkceCodeVerifier: payload.verifier,
     expectedState: state,
     expectedNonce: payload.nonce,

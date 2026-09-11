@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 import { getDb } from "../../db";
+import { demoAuthUser, getDemoSession } from "../demo/server";
 import { getSession } from "./session";
 
 export async function requirePageUser(returnTo: string, requireOnboarding = true) {
+  const demoSession = await getDemoSession();
+  if (demoSession) return demoAuthUser(demoSession);
+
   const user = await getSession();
   if (!user) redirect(`/sign-in?returnTo=${encodeURIComponent(returnTo)}`);
   if (requireOnboarding) {

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1788395651235,
+      "tag": "0000_create_learning_platform",
+      "breakpoints": true
+    }
+  ]
+}

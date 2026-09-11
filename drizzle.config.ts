@@ -1,8 +1,10 @@
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  out: "./drizzle-mysql",
-  schema: "./db/schema.ts",
+  out: "./database/platform-migrations",
+  // Authentication is managed by the existing hand-reviewed migration 002.
+  // New product-domain migrations are generated from the normalized platform schema.
+  schema: "./db/learning-schema.ts",
   dialect: "mysql",
   dbCredentials: {
     host: process.env.DB_HOST ?? "localhost",
