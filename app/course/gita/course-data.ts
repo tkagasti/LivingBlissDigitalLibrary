@@ -4,10 +4,11 @@ export type GitaChapter = {
   title: string;
   focus: string;
   essentialQuestion: string;
+  verseCount: number;
   status: "available" | "curriculum-preview";
 };
 
-const chapterBlueprint: Array<Omit<GitaChapter, "number" | "slug" | "status">> = [
+const chapterBlueprint: Array<Omit<GitaChapter, "number" | "slug" | "status" | "verseCount">> = [
   {
     title: "Arjuna Viṣāda Yoga",
     focus: "Recognising moral conflict and the need for guidance.",
@@ -100,11 +101,14 @@ const chapterBlueprint: Array<Omit<GitaChapter, "number" | "slug" | "status">> =
   },
 ];
 
+const chapterVerseCounts = [47, 72, 43, 42, 29, 47, 30, 28, 34, 42, 55, 20, 35, 27, 20, 24, 28, 78] as const;
+
 export const gitaChapters: GitaChapter[] = chapterBlueprint.map((chapter, index) => ({
   ...chapter,
   number: index + 1,
   slug: String(index + 1),
-  status: index === 1 ? "available" : "curriculum-preview",
+  verseCount: chapterVerseCounts[index],
+  status: "available",
 }));
 
 export const foundationModules = [

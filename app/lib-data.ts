@@ -45,7 +45,7 @@ export const libraryItems = [
   { type: "Scripture", title: "Purushottama Kshetra Mahatmyam", subtitle: "Skanda Purāṇa · 49-chapter catalogue", status: "Verified catalogue", language: "Sanskrit · English", topic: "Jagannatha" },
   { type: "Sacred text", title: "Nīlādri Mahodaya", subtitle: "Temple tradition and ritual literature", status: "Editorial preparation", language: "Sanskrit · Odia", topic: "Jagannatha" },
   { type: "Hymn", title: "Jagannāthāṣṭakam", subtitle: "Text, transliteration, translation and recitation", status: "Enhanced", language: "Sanskrit · English", topic: "Jagannatha" },
-  { type: "Course", title: "Bhagavad Gita: Foundations", subtitle: "18 chapters · video, slides and scripture study", status: "Learning pilot", language: "English · Hindi · Odia", topic: "Gita" },
+  { type: "Course", title: "Shreemad Bhagavad Geeta", subtitle: "Complete 18-chapter course · 701 sequential shlokas", status: "Complete Sanskrit text", language: "Sanskrit · English · Hindi · Odia", topic: "Gita" },
   { type: "Open learning", title: "10 Essential Shlokas of the Bhagavad Gita", subtitle: "Read, reflect, take the guest assessment and earn a certificate", status: "No login required", language: "Sanskrit · English", topic: "Gita" },
   { type: "Scripture", title: "Īśa Upanishad", subtitle: "18 mantras with word-by-word meaning", status: "Verified", language: "Sanskrit · English", topic: "Upanishad" },
   { type: "Scripture", title: "Kena Upanishad", subtitle: "Four khaṇḍas · inquiry into consciousness", status: "In review", language: "Sanskrit · English", topic: "Upanishad" },

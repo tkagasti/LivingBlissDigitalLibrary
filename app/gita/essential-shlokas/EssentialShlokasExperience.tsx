@@ -51,12 +51,23 @@ export default function EssentialShlokasExperience() {
 
   useEffect(() => {
     const restore = window.setTimeout(() => {
+      const requestedReference = new URLSearchParams(window.location.search).get("ref");
+      const requestedIndex = essentialShlokas.findIndex((item) => item.reference === requestedReference);
+      const initialIndex = requestedIndex >= 0 ? requestedIndex : 0;
+      setActive(initialIndex);
       try {
         const stored = window.localStorage.getItem(storageKey);
         if (stored) {
           const parsed = JSON.parse(stored) as GuestProgress;
-          setProgress({ ...emptyProgress, ...parsed, viewed: parsed.viewed?.length ? parsed.viewed : [0] });
+          const restoredViewed = parsed.viewed?.length ? parsed.viewed : [0];
+          setProgress({
+            ...emptyProgress,
+            ...parsed,
+            viewed: restoredViewed.includes(initialIndex) ? restoredViewed : [...restoredViewed, initialIndex],
+          });
           setCertificateName(parsed.name || "");
+        } else if (initialIndex !== 0) {
+          setProgress({ ...emptyProgress, viewed: [initialIndex] });
         }
       } catch { /* A private browser may disable storage; the experience still works. */ }
       setHydrated(true);

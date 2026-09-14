@@ -3,8 +3,10 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { chapters, collections, libraryItems, questions } from "../lib-data";
+import { chapters, libraryItems, questions } from "../lib-data";
 import { gitaChapters } from "../course/gita/course-data";
+import { livingBlissGitaContext } from "../platform/context";
+import type { StudyCompanionResponse } from "../ai/contracts";
 import type { DemoProfileId, DemoProfileSummary } from "../demo/demo-data";
 import ShlokaStudyPanel, {
   localizeStudyDigits,
@@ -76,6 +78,17 @@ type DemoStatus = {
   profiles: DemoProfileSummary[];
 };
 
+const demoDisplayNames: Record<StudyLanguage, Record<DemoProfileId, string>> = {
+  English: { "new-learner": "Ananya Sharma", "active-learner": "Arjun Mehta", "course-completer": "Meera Iyer" },
+  Hindi: { "new-learner": "अनन्या शर्मा", "active-learner": "अर्जुन मेहता", "course-completer": "मीरा अय्यर" },
+  Odia: { "new-learner": "ଅନନ୍ୟା ଶର୍ମା", "active-learner": "ଅର୍ଜୁନ ମେହେଟା", "course-completer": "ମୀରା ଆୟର" },
+};
+
+function localizedLearnerName(name: string, language: StudyLanguage) {
+  const profile = Object.entries(demoDisplayNames.English).find(([, englishName]) => englishName === name)?.[0] as DemoProfileId | undefined;
+  return profile ? demoDisplayNames[language][profile] : name;
+}
+
 function DemoToolbar({
   status,
   busyProfile,
@@ -140,7 +153,7 @@ function DemoToolbar({
     <aside className="demo-toolbar" aria-label={copy.aria}>
       <div className="demo-toolbar-intro">
         <span>{copy.prototype}</span>
-        <strong>{active ? `${copy.labels[active.id]}: ${active.learnerName}` : copy.experience}</strong>
+        <strong>{active ? `${copy.labels[active.id]}: ${demoDisplayNames[language][active.id]}` : copy.experience}</strong>
         <small>{active ? copy.descriptions[active.id] : copy.choose}</small>
       </div>
       <div className="demo-profile-actions">
@@ -154,7 +167,7 @@ function DemoToolbar({
             title={copy.descriptions[profile.id]}
           >
             <span>{copy.labels[profile.id]}</span>
-            <small>{profile.learnerName}</small>
+            <small>{demoDisplayNames[language][profile.id]}</small>
           </button>
         ))}
         {active && (
@@ -167,9 +180,9 @@ function DemoToolbar({
   );
 }
 
-function Brand() {
+function Brand({ language = "English" }: { language?: StudyLanguage }) {
   return (
-    <Link className="brand" href="/" aria-label="Living Bliss Digital Library home">
+    <Link className={`brand${language === "Odia" ? " brand-odia" : ""}`} href={language === "Odia" ? "/?lang=or" : "/"} aria-label={language === "Odia" ? "ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ଡିଜିଟାଲ ଗ୍ରନ୍ଥାଗାର ମୁଖ୍ୟ ପୃଷ୍ଠା" : "Living Bliss Digital Library home"}>
       <Image
         className="brand-logo"
         src="/living-bliss-logo-2026.png"
@@ -178,6 +191,7 @@ function Brand() {
         height={836}
         priority
       />
+      {language === "Odia" && <span className="brand-odia-copy"><strong>ଲିଭିଙ୍ଗ ବ୍ଲିସ୍</strong><small>ଆନ୍ତରିକ ଆନନ୍ଦର ଜାଗରଣ</small></span>}
     </Link>
   );
 }
@@ -259,6 +273,7 @@ const headerCopy: Record<StudyLanguage, {
 function Header({ view, learner, authenticated, onJoin, language = "English" }: { view: View; learner: Learner; authenticated: boolean; onJoin: () => void; language?: StudyLanguage }) {
   const [signingOut, setSigningOut] = useState(false);
   const copy = headerCopy[language];
+  const learnerName = localizedLearnerName(learner.displayName, language);
 
   const signOut = async () => {
     if (signingOut) return;
@@ -277,7 +292,7 @@ function Header({ view, learner, authenticated, onJoin, language = "English" }: 
   return (
     <header className="site-header">
       <div className="header-inner">
-        <Brand />
+        <Brand language={language} />
         <nav className="desktop-nav" aria-label={copy.primaryNavigation}>
           {navItems.map((item) => (
             <a key={item.label} href={item.href} aria-current={item.views.includes(view) ? "page" : undefined}>
@@ -289,8 +304,8 @@ function Header({ view, learner, authenticated, onJoin, language = "English" }: 
         <div className="header-actions">
           {authenticated ? (
             <>
-              <a className="profile-button" href="/dashboard" aria-label={copy.openDashboard(learner.displayName)}>
-                <span>{learner.displayName.slice(0, 1).toUpperCase()}</span>
+              <a className="profile-button" href="/dashboard" aria-label={copy.openDashboard(learnerName)}>
+                <span>{learnerName.slice(0, 1).toUpperCase()}</span>
                 <b>{copy.myLearning}</b>
               </a>
               <button className="header-signout" type="button" onClick={signOut} disabled={signingOut}>
@@ -379,8 +394,8 @@ const footerCopy: Record<StudyLanguage, {
     trust: "ବିଶ୍ୱସନୀୟତା",
     sourceAware: "ଉତ୍ସ-ସଚେତନ ପ୍ରକାଶନ",
     scholarReview: "ବିଦ୍ୱାନ ସମୀକ୍ଷା ପ୍ରକ୍ରିୟା",
-    accessibility: "WCAG ୨.୨ AA ଲକ୍ଷ୍ୟ",
-    copyright: "© ୨୦୨୬ Living Bliss. ସମସ୍ତ ଅଧିକାର ସଂରକ୍ଷିତ।",
+    accessibility: "ଡବ୍ଲ୍ୟୁସିଏଜି ୨.୨ ଏଏ ଲକ୍ଷ୍ୟ",
+    copyright: "© ୨୦୨୬ ଲିଭିଙ୍ଗ ବ୍ଲିସ୍। ସମସ୍ତ ଅଧିକାର ସଂରକ୍ଷିତ।",
     mantra: "ଓଁ ଶ୍ରୀ ଗୁରୁଭ୍ୟୋ ନମଃ · ଓଁ ଶ୍ରୀ ପରମାତ୍ମନେ ନମଃ",
   },
 };
@@ -391,7 +406,7 @@ function Footer({ language = "English" }: { language?: StudyLanguage }) {
     <footer className="site-footer">
       <div className="footer-grid">
         <div>
-          <Brand />
+          <Brand language={language} />
           <p>{copy.description}</p>
         </div>
         <div>
@@ -401,7 +416,7 @@ function Footer({ language = "English" }: { language?: StudyLanguage }) {
           <a href="/membership">{copy.membership}</a>
         </div>
         <div>
-          <strong>Living Bliss</strong>
+          <strong>{language === "Odia" ? "ଲିଭିଙ୍ଗ ବ୍ଲିସ୍" : "Living Bliss"}</strong>
           <a href="https://livingbliss.org/about">{copy.about}</a>
           <a href="https://livingbliss.org/resources">{copy.resources}</a>
           <a href="https://livingbliss.org/contact">{copy.contact}</a>
@@ -414,105 +429,266 @@ function Footer({ language = "English" }: { language?: StudyLanguage }) {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>{copy.copyright}</span>
         <span>{copy.mantra}</span>
       </div>
     </footer>
   );
 }
 
-function CollectionCard({ item }: { item: (typeof collections)[number] }) {
-  return (
-    <article className={`collection-card ${item.tone}`}>
-      <div className="collection-top">
-        <span className="collection-mark" aria-hidden="true">{item.mark}</span>
-        <span className="status-pill">{item.type}</span>
-      </div>
-      <h3>{item.title}</h3>
-      <p>{item.description}</p>
-      <div className="card-footer">
-        <small>{item.meta}</small>
-        <a href={item.href} aria-label={`Explore ${item.title}`}>Explore <span aria-hidden="true">→</span></a>
-      </div>
-    </article>
-  );
+type GitaPathRecommendation = {
+  href: string;
+  title: string;
+  detail: string;
+};
+
+const homeChapterTitles: Record<StudyLanguage, string[]> = {
+  English: gitaChapters.map((chapter) => chapter.title),
+  Hindi: ["अर्जुन विषाद योग", "सांख्य योग", "कर्म योग", "ज्ञान कर्म संन्यास योग", "कर्म संन्यास योग", "ध्यान योग", "ज्ञान विज्ञान योग", "अक्षर ब्रह्म योग", "राजविद्या राजगुह्य योग", "विभूति योग", "विश्वरूप दर्शन योग", "भक्ति योग", "क्षेत्र क्षेत्रज्ञ विभाग योग", "गुणत्रय विभाग योग", "पुरुषोत्तम योग", "दैवासुर संपद विभाग योग", "श्रद्धात्रय विभाग योग", "मोक्ष संन्यास योग"],
+  Odia: ["ଅର୍ଜୁନ ବିଷାଦ ଯୋଗ", "ସାଂଖ୍ୟ ଯୋଗ", "କର୍ମ ଯୋଗ", "ଜ୍ଞାନ କର୍ମ ସନ୍ନ୍ୟାସ ଯୋଗ", "କର୍ମ ସନ୍ନ୍ୟାସ ଯୋଗ", "ଧ୍ୟାନ ଯୋଗ", "ଜ୍ଞାନ ବିଜ୍ଞାନ ଯୋଗ", "ଅକ୍ଷର ବ୍ରହ୍ମ ଯୋଗ", "ରାଜବିଦ୍ୟା ରାଜଗୁହ୍ୟ ଯୋଗ", "ବିଭୂତି ଯୋଗ", "ବିଶ୍ୱରୂପ ଦର୍ଶନ ଯୋଗ", "ଭକ୍ତି ଯୋଗ", "କ୍ଷେତ୍ର କ୍ଷେତ୍ରଜ୍ଞ ବିଭାଗ ଯୋଗ", "ଗୁଣତ୍ରୟ ବିଭାଗ ଯୋଗ", "ପୁରୁଷୋତ୍ତମ ଯୋଗ", "ଦୈବାସୁର ସମ୍ପଦ ବିଭାଗ ଯୋଗ", "ଶ୍ରଦ୍ଧାତ୍ରୟ ବିଭାଗ ଯୋଗ", "ମୋକ୍ଷ ସନ୍ନ୍ୟାସ ଯୋଗ"],
+};
+
+const homeCopy = {
+  English: {
+    eyebrow: "A complete 18-chapter academic study pathway", invocation: "ॐ श्री गुरुभ्यो नमः • ॐ श्री परमात्मने नमः", titlePrimary: "श्रीमद्भगवद्गीता", titleSecondary: "Shreemad Bhagavad Geeta",
+    introduction: "Study the complete Sanskrit text in sequence—from Chapter 1, Shloka 1 through Chapter 18—with each shloka presented as a focused lesson.",
+    startTag: "Start the course", startTitle: "Begin with the first shloka", startText: "Follow the Gita in its traditional sequence, one calm lesson at a time.", startButton: "Start Chapter 1 · Shloka 1", courseMap: "View all chapters",
+    directTag: "Direct navigation", directTitle: "Go to a chapter and shloka", directText: "Choose both values and open exactly the lesson you need.", chapter: "Chapter", shloka: "Shloka", go: "Open selected shloka",
+    statChapters: "chapters", statShlokas: "shlokas", statSequence: "traditional sequence", statLocal: "locally stored text",
+    guideTag: "Source-grounded learning companion", guideTitle: "Ask Gita Guide", guideText: "Ask where to begin or which part of the course relates to your learning goal.", suggestionsAria: "Suggested learning wishes",
+    suggestions: [
+      ["I’m completely new", "I am completely new to the Bhagavad Gita. Help me understand its setting and where to begin."],
+      ["I want better focus", "I want to understand focus, steadiness and right action when I worry about results."],
+      ["I have a difficult decision", "I want to understand duty, moral conflict and how to seek guidance when choices feel difficult."],
+      ["Teach me one shloka", "I want to begin with one essential shloka about sincere action and learn its meaning."],
+    ],
+    questionLabel: "What would you like the Gita to help you understand?", placeholder: "For example: I want help staying focused when results worry me.", privacy: "Please do not include personal details.", ask: "Ask Gita Guide", asking: "Finding your path…", suggested: "Suggested starting point", broader: "A broader starting point may help", openLesson: "Open suggested lesson", essentials: "Begin with Chapter 1", why: "Why this path", guideError: "Gita Guide could not prepare a starting point.", groundedAnswer: "The guide found an approved course starting point for your question.", limitedAnswer: "The approved course material does not yet contain a direct answer. Begin with the suggested foundation lesson.",
+    welcome: "Welcome back", continueTitle: "Continue where you left off", readyTitle: "Your learning path is ready", resume: "Resume learning",
+  },
+  Hindi: {
+    eyebrow: "१८ अध्यायों का सम्पूर्ण शैक्षणिक अध्ययन मार्ग", invocation: "ॐ श्री गुरुभ्यो नमः • ॐ श्री परमात्मने नमः", titlePrimary: "श्रीमद्भगवद्गीता", titleSecondary: "श्रीमद्भगवद्गीता अध्ययन",
+    introduction: "अध्याय १, श्लोक १ से अध्याय १८ तक सम्पूर्ण संस्कृत पाठ का क्रमिक अध्ययन करें। प्रत्येक श्लोक एक केन्द्रित पाठ के रूप में प्रस्तुत है।",
+    startTag: "पाठ्यक्रम आरम्भ करें", startTitle: "पहले श्लोक से आरम्भ करें", startText: "एक समय में एक शान्त पाठ के साथ गीता का पारम्परिक क्रम अपनाएँ।", startButton: "अध्याय १ · श्लोक १ आरम्भ करें", courseMap: "सभी अध्याय देखें",
+    directTag: "सीधा मार्गदर्शन", directTitle: "अध्याय और श्लोक पर जाएँ", directText: "दोनों चुनें और आवश्यक पाठ सीधे खोलें।", chapter: "अध्याय", shloka: "श्लोक", go: "चुना हुआ श्लोक खोलें",
+    statChapters: "अध्याय", statShlokas: "श्लोक", statSequence: "पारम्परिक क्रम", statLocal: "स्थानीय रूप से संग्रहित पाठ",
+    guideTag: "स्रोत-आधारित अध्ययन सहायक", guideTitle: "गीता मार्गदर्शक से पूछें", guideText: "पूछें कि कहाँ से आरम्भ करें या पाठ्यक्रम का कौन-सा भाग आपके अध्ययन लक्ष्य से सम्बन्धित है।", suggestionsAria: "सुझाए गए अध्ययन प्रश्न",
+    suggestions: [["मैं बिल्कुल नया हूँ", "I am completely new to the Bhagavad Gita. Help me understand its setting and where to begin."], ["मुझे बेहतर एकाग्रता चाहिए", "I want to understand focus, steadiness and right action when I worry about results."], ["मुझे कठिन निर्णय लेना है", "I want to understand duty, moral conflict and how to seek guidance when choices feel difficult."], ["मुझे एक श्लोक सिखाएँ", "I want to begin with one essential shloka about sincere action and learn its meaning."]],
+    questionLabel: "आप गीता से क्या समझना चाहते हैं?", placeholder: "उदाहरण: परिणाम की चिन्ता होने पर मैं एकाग्र कैसे रहूँ?", privacy: "कृपया व्यक्तिगत विवरण न लिखें।", ask: "गीता मार्गदर्शक से पूछें", asking: "मार्ग खोजा जा रहा है…", suggested: "सुझाया गया आरम्भ", broader: "एक व्यापक आरम्भ उपयोगी हो सकता है", openLesson: "सुझाया गया पाठ खोलें", essentials: "अध्याय १ से आरम्भ करें", why: "इस मार्ग का कारण", guideError: "गीता मार्गदर्शक अभी आरम्भ बिन्दु तैयार नहीं कर सका।", groundedAnswer: "मार्गदर्शक ने आपके प्रश्न के लिए अनुमोदित पाठ्यक्रम से आरम्भ बिन्दु खोजा है।", limitedAnswer: "अनुमोदित सामग्री में अभी सीधा उत्तर उपलब्ध नहीं है। सुझाए गए आधार पाठ से आरम्भ करें।",
+    welcome: "पुनः स्वागत", continueTitle: "जहाँ छोड़ा था वहीं से जारी रखें", readyTitle: "आपका अध्ययन मार्ग तैयार है", resume: "अध्ययन जारी रखें",
+  },
+  Odia: {
+    eyebrow: "୧୮ଟି ଅଧ୍ୟାୟର ସମ୍ପୂର୍ଣ୍ଣ ଶିକ୍ଷାମୂଳକ ଅଧ୍ୟୟନ ପଥ", invocation: "ଓଁ ଶ୍ରୀ ଗୁରୁଭ୍ୟୋ ନମଃ • ଓଁ ଶ୍ରୀ ପରମାତ୍ମନେ ନମଃ", titlePrimary: "ଶ୍ରୀମଦ୍ଭଗବଦ୍‌ଗୀତା", titleSecondary: "ଶ୍ରୀମଦ୍ଭଗବଦ୍‌ଗୀତା ଅଧ୍ୟୟନ",
+    introduction: "ଅଧ୍ୟାୟ ୧, ଶ୍ଲୋକ ୧ରୁ ଅଧ୍ୟାୟ ୧୮ ପର୍ଯ୍ୟନ୍ତ ସମ୍ପୂର୍ଣ୍ଣ ସଂସ୍କୃତ ପାଠକୁ କ୍ରମାନୁସାରେ ଅଧ୍ୟୟନ କରନ୍ତୁ। ପ୍ରତ୍ୟେକ ଶ୍ଲୋକ ଏକ ସ୍ୱତନ୍ତ୍ର ପାଠ।",
+    startTag: "ପାଠ୍ୟକ୍ରମ ଆରମ୍ଭ କରନ୍ତୁ", startTitle: "ପ୍ରଥମ ଶ୍ଲୋକରୁ ଆରମ୍ଭ କରନ୍ତୁ", startText: "ଗୋଟିଏ ପରେ ଗୋଟିଏ ସରଳ ପାଠ ସହିତ ଗୀତାର ପାରମ୍ପରିକ କ୍ରମ ଅନୁସରଣ କରନ୍ତୁ।", startButton: "ଅଧ୍ୟାୟ ୧ · ଶ୍ଲୋକ ୧ ଆରମ୍ଭ କରନ୍ତୁ", courseMap: "ସମସ୍ତ ଅଧ୍ୟାୟ ଦେଖନ୍ତୁ",
+    directTag: "ସିଧାସଳଖ ମାର୍ଗଦର୍ଶନ", directTitle: "ଅଧ୍ୟାୟ ଓ ଶ୍ଲୋକକୁ ଯାଆନ୍ତୁ", directText: "ଉଭୟକୁ ବାଛନ୍ତୁ ଏବଂ ଆବଶ୍ୟକ ପାଠଟି ସିଧାସଳଖ ଖୋଲନ୍ତୁ।", chapter: "ଅଧ୍ୟାୟ", shloka: "ଶ୍ଲୋକ", go: "ଚୟନିତ ଶ୍ଲୋକ ଖୋଲନ୍ତୁ",
+    statChapters: "ଅଧ୍ୟାୟ", statShlokas: "ଶ୍ଲୋକ", statSequence: "ପାରମ୍ପରିକ କ୍ରମ", statLocal: "ସ୍ଥାନୀୟ ଭାବେ ସଂରକ୍ଷିତ ପାଠ",
+    guideTag: "ଉତ୍ସ-ଆଧାରିତ ଅଧ୍ୟୟନ ସହାୟକ", guideTitle: "ଗୀତା ମାର୍ଗଦର୍ଶକଙ୍କୁ ପଚାରନ୍ତୁ", guideText: "କେଉଁଠାରୁ ଆରମ୍ଭ କରିବେ କିମ୍ବା ପାଠ୍ୟକ୍ରମର କେଉଁ ଅଂଶ ଆପଣଙ୍କ ଅଧ୍ୟୟନ ଲକ୍ଷ୍ୟ ସହ ସମ୍ବନ୍ଧିତ, ତାହା ପଚାରନ୍ତୁ।", suggestionsAria: "ପ୍ରସ୍ତାବିତ ଅଧ୍ୟୟନ ପ୍ରଶ୍ନ",
+    suggestions: [["ମୁଁ ସମ୍ପୂର୍ଣ୍ଣ ନୂଆ", "I am completely new to the Bhagavad Gita. Help me understand its setting and where to begin."], ["ମୋତେ ଅଧିକ ଏକାଗ୍ରତା ଦରକାର", "I want to understand focus, steadiness and right action when I worry about results."], ["ମୋତେ ଏକ କଠିନ ନିଷ୍ପତ୍ତି ନେବାକୁ ହେବ", "I want to understand duty, moral conflict and how to seek guidance when choices feel difficult."], ["ମୋତେ ଗୋଟିଏ ଶ୍ଲୋକ ଶିଖାନ୍ତୁ", "I want to begin with one essential shloka about sincere action and learn its meaning."]],
+    questionLabel: "ଗୀତାରୁ ଆପଣ କ’ଣ ବୁଝିବାକୁ ଚାହାନ୍ତି?", placeholder: "ଉଦାହରଣ: ଫଳ ବିଷୟରେ ଚିନ୍ତା ହେଲେ ମୁଁ କିପରି ଏକାଗ୍ର ରହିବି?", privacy: "ଦୟାକରି ବ୍ୟକ୍ତିଗତ ବିବରଣୀ ଲେଖନ୍ତୁ ନାହିଁ।", ask: "ଗୀତା ମାର୍ଗଦର୍ଶକଙ୍କୁ ପଚାରନ୍ତୁ", asking: "ଅଧ୍ୟୟନ ପଥ ଖୋଜାଯାଉଛି…", suggested: "ପ୍ରସ୍ତାବିତ ଆରମ୍ଭ", broader: "ଏକ ବ୍ୟାପକ ଆରମ୍ଭ ଉପଯୋଗୀ ହୋଇପାରେ", openLesson: "ପ୍ରସ୍ତାବିତ ପାଠ ଖୋଲନ୍ତୁ", essentials: "ଅଧ୍ୟାୟ ୧ରୁ ଆରମ୍ଭ କରନ୍ତୁ", why: "ଏହି ପଥର କାରଣ", guideError: "ଗୀତା ମାର୍ଗଦର୍ଶକ ବର୍ତ୍ତମାନ ଆରମ୍ଭ ବିନ୍ଦୁ ପ୍ରସ୍ତୁତ କରିପାରିଲେ ନାହିଁ।", groundedAnswer: "ମାର୍ଗଦର୍ଶକ ଆପଣଙ୍କ ପ୍ରଶ୍ନ ପାଇଁ ଅନୁମୋଦିତ ପାଠ୍ୟକ୍ରମରୁ ଏକ ଆରମ୍ଭ ବିନ୍ଦୁ ପାଇଛନ୍ତି।", limitedAnswer: "ଅନୁମୋଦିତ ପାଠ୍ୟସାମଗ୍ରୀରେ ବର୍ତ୍ତମାନ ସିଧାସଳଖ ଉତ୍ତର ନାହିଁ। ପ୍ରସ୍ତାବିତ ମୂଳ ପାଠରୁ ଆରମ୍ଭ କରନ୍ତୁ।",
+    welcome: "ପୁଣି ସ୍ୱାଗତ", continueTitle: "ଯେଉଁଠାରେ ଛାଡ଼ିଥିଲେ ସେଠାରୁ ଜାରି ରଖନ୍ତୁ", readyTitle: "ଆପଣଙ୍କ ଅଧ୍ୟୟନ ପଥ ପ୍ରସ୍ତୁତ", resume: "ଅଧ୍ୟୟନ ଜାରି ରଖନ୍ତୁ",
+  },
+} as const;
+
+function homeLanguageCode(language: StudyLanguage) {
+  return language === "Odia" ? "or" : language === "Hindi" ? "hi" : "en";
 }
 
-function HomeView({ learner, onJoin }: { learner: Learner; onJoin: () => void }) {
-  const [search, setSearch] = useState("");
+function homeChapterTitle(chapterNumber: number, language: StudyLanguage) {
+  return homeChapterTitles[language][chapterNumber - 1] ?? gitaChapters[chapterNumber - 1]?.title ?? "";
+}
+
+function enrichPathfinderQuestion(question: string) {
+  const value = question.toLocaleLowerCase("en");
+  const signals: string[] = [];
+
+  if (/(new|begin|start|intro|setting)/.test(value)) signals.push("setting moral conflict guidance Chapter 1");
+  if (/(focus|attention|result|worry|exam|stress|steady)/.test(value)) signals.push("steadiness right action fear of results Chapter 2");
+  if (/(decision|duty|conflict|choice|confus)/.test(value)) signals.push("duty relationship consequence moral conflict guidance Chapter 1");
+  if (/(work|action|study|discipline|procrast)/.test(value)) signals.push("daily work disciplined service action attachment Chapter 3");
+  if (/(meditat|mind|balance)/.test(value)) signals.push("discipline of mind meditation balance Chapter 6");
+  if (/(devotion|bhakti|compassion|kindness)/.test(value)) signals.push("qualities practices devotion compassion Chapter 12");
+  if (/(surrender|freedom|purpose|fear)/.test(value)) signals.push("integration surrender freedom final counsel Chapter 18");
+  if (/(shloka|verse|sincere action)/.test(value)) signals.push("2.47 right action sincere action results");
+
+  return signals.length ? `${question}\n\nLearning-path signals: ${signals.join("; ")}` : question;
+}
+
+function recommendationFrom(response: StudyCompanionResponse, language: StudyLanguage): GitaPathRecommendation | null {
+  const citation = response.citations[0];
+  if (!citation) return null;
+  const languageCode = homeLanguageCode(language);
+  const labels = homeCopy[language];
+
+  const shlokaMatch = citation.id.match(/^shloka-(\d+)-(\d+)$/);
+  if (shlokaMatch) {
+    const reference = `${shlokaMatch[1]}.${shlokaMatch[2]}`;
+    return {
+      href: `/course/gita/chapter/${shlokaMatch[1]}/shloka/${shlokaMatch[2]}?lang=${languageCode}`,
+      title: `${labels.shloka} ${localizeStudyDigits(reference, language)}`,
+      detail: language === "English" ? citation.title : homeChapterTitle(Number(shlokaMatch[1]), language),
+    };
+  }
+
+  const chapterMatch = citation.id.match(/^curriculum-gita-(\d+)$/);
+  if (chapterMatch) {
+    const chapterNumber = Number(chapterMatch[1]);
+    return {
+      href: `/course/gita/chapter/${chapterNumber}/shloka/1?lang=${languageCode}`,
+      title: `${labels.chapter} ${localizeStudyDigits(chapterNumber, language)} · ${homeChapterTitle(chapterNumber, language)}`,
+      detail: language === "English" ? citation.title : homeChapterTitle(chapterNumber, language),
+    };
+  }
+
+  return null;
+}
+
+function HomeView({ learner, language }: { learner: Learner; onJoin: () => void; language: StudyLanguage }) {
+  const [pathQuestion, setPathQuestion] = useState("");
+  const [pathResponse, setPathResponse] = useState<StudyCompanionResponse | null>(null);
+  const [pathRecommendation, setPathRecommendation] = useState<GitaPathRecommendation | null>(null);
+  const [pathError, setPathError] = useState("");
+  const [pathLoading, setPathLoading] = useState(false);
+  const [jumpChapter, setJumpChapter] = useState(1);
+  const [jumpShloka, setJumpShloka] = useState(1);
+  const copy = homeCopy[language];
+  const languageCode = homeLanguageCode(language);
+  const selectedChapter = gitaChapters[jumpChapter - 1] ?? gitaChapters[0];
   const chapterStudyComplete = chapterTwoStudyComplete(learner);
   const nextLearningHref = learner.completedLessons.length ? nextChapterTwoHref(learner) : "/course/gita";
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    window.location.href = `/library?search=${encodeURIComponent(search)}`;
+
+  const askGuide = async (value: string) => {
+    const question = value.trim();
+    if (question.length < 3 || pathLoading) return;
+    setPathQuestion(question);
+    setPathLoading(true);
+    setPathError("");
+    setPathResponse(null);
+    setPathRecommendation(null);
+
+    try {
+      const result = await fetch("/api/ai/study-companion", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          question: enrichPathfinderQuestion(question),
+          tenantId: livingBlissGitaContext.tenantId,
+          programmeId: livingBlissGitaContext.programmeId,
+          editionId: livingBlissGitaContext.editionId,
+          language: languageCode,
+        }),
+      });
+      const body = (await result.json()) as StudyCompanionResponse & { error?: string };
+      if (!result.ok) throw new Error(copy.guideError);
+      setPathResponse(body);
+      setPathRecommendation(recommendationFrom(body, language));
+    } catch {
+      setPathError(copy.guideError);
+    } finally {
+      setPathLoading(false);
+    }
   };
+
+  const submitPathQuestion = (event: FormEvent) => {
+    event.preventDefault();
+    void askGuide(pathQuestion);
+  };
+
+  const submitJump = (event: FormEvent) => {
+    event.preventDefault();
+    window.location.href = `/course/gita/chapter/${jumpChapter}/shloka/${jumpShloka}?lang=${languageCode}`;
+  };
+
   return (
     <>
-      <section className="hero">
-        <div className="hero-overlay" />
-        <div className="hero-content page-shell">
-          <span className="eyebrow">Authentic wisdom · accessible to all</span>
-          <h1>Explore, learn and live the wisdom of Sanātana Dharma.</h1>
-          <p>Read verified scriptures, follow beginner-friendly learning paths and preserve your progress across every chapter.</p>
-          <form className="hero-search" onSubmit={submit} role="search">
-            <label className="sr-only" htmlFor="home-search">Search the digital library</label>
-            <input id="home-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search a scripture, verse, teacher or topic…" />
-            <button type="submit" aria-label="Search">Search</button>
-          </form>
-          <div className="hero-actions">
-            <a className="button primary" href="/library?search=Jagannatha">Explore Jagannatha Dham</a>
-            <a className="button light" href="/gita/start">Start the Gita pathway</a>
+      <section className={`gita-course-start language-${languageCode}`} aria-labelledby="gita-entry-title">
+        <div className="gita-course-art" aria-hidden="true" />
+        <div className="gita-course-art-shade" />
+        <div className="page-shell gita-course-start-grid">
+          <div className="gita-course-intro">
+            <p className="gita-hero-invocation" lang={language === "Odia" ? "sa-Orya" : "sa-Deva"}>{copy.invocation}</p>
+            <span className="eyebrow">{copy.eyebrow}</span>
+            <h1 id="gita-entry-title">
+              <span lang={language === "Odia" ? "sa-Orya" : "sa-Deva"}>{copy.titlePrimary}</span>
+              <small>{copy.titleSecondary}</small>
+            </h1>
+            <p>{copy.introduction}</p>
+            <article className="gita-start-card">
+              <span>{copy.startTag}</span>
+              <h2>{copy.startTitle}</h2>
+              <p>{copy.startText}</p>
+              <div>
+                <Link className="button saffron" href={`/course/gita/chapter/1/shloka/1?lang=${languageCode}`}>{copy.startButton} <span aria-hidden="true">→</span></Link>
+              </div>
+            </article>
           </div>
+
+          <aside className="gita-home-jump" aria-labelledby="gita-home-jump-title">
+            <span className="eyebrow">{copy.directTag}</span>
+            <h2 id="gita-home-jump-title">{copy.directTitle}</h2>
+            <p>{copy.directText}</p>
+            <form onSubmit={submitJump}>
+              <label htmlFor="home-gita-chapter">{copy.chapter}</label>
+              <select id="home-gita-chapter" value={jumpChapter} onChange={(event) => { setJumpChapter(Number(event.target.value)); setJumpShloka(1); }}>
+                {gitaChapters.map((chapter) => <option key={chapter.number} value={chapter.number}>{localizeStudyDigits(chapter.number, language)} · {homeChapterTitle(chapter.number, language)}</option>)}
+              </select>
+              <label htmlFor="home-gita-shloka">{copy.shloka}</label>
+              <select id="home-gita-shloka" value={jumpShloka} onChange={(event) => setJumpShloka(Number(event.target.value))}>
+                {Array.from({ length: selectedChapter.verseCount }, (_, index) => index + 1).map((number) => <option key={number} value={number}>{copy.shloka} {localizeStudyDigits(number, language)}</option>)}
+              </select>
+              <button className="button primary wide" type="submit">{copy.go} <span aria-hidden="true">→</span></button>
+            </form>
+          </aside>
         </div>
       </section>
 
-      <div className="trust-strip">
-        <span>✓ Scholar-reviewed editions</span><span>✓ Source traceability</span><span>✓ Four initial languages</span><span>✓ Accessible learning</span>
+      <div className="gita-course-facts" aria-label={copy.eyebrow}>
+        <span><strong>{localizeStudyDigits(18, language)}</strong>{copy.statChapters}</span>
+        <span><strong>{localizeStudyDigits(701, language)}</strong>{copy.statShlokas}</span>
+        <span><strong>✓</strong>{copy.statSequence}</span>
+        <span><strong>✓</strong>{copy.statLocal}</span>
       </div>
-
-      <section className="guest-gita-invite">
-        <div className="page-shell guest-gita-invite-inner">
-          <div className="guest-gita-invite-mark" aria-hidden="true"><span>गीता</span><strong>10</strong></div>
-          <div><span className="eyebrow">A complete experience for every visitor</span><h2>Begin with 10 essential shlokas</h2><p>Read and reflect without signing in, take a short assessment and receive a personal completion certificate.</p></div>
-          <a className="button saffron" href="/gita/essential-shlokas">Begin free · no login</a>
-        </div>
-      </section>
 
       {learner.memberJoined && (
         <section className="resume-band">
           <div className="page-shell resume-inner">
             <div>
-              <span className="eyebrow">Welcome back, {learner.displayName}</span>
-              <h2>{learner.completedLessons.length ? "Continue where you left off" : "Your learning path is ready"}</h2>
-              <p>{learner.completedLessons.length ? chapterStudyComplete ? "Bhagavad Gita · Chapter 2 · assessment is the next step" : "Bhagavad Gita · Chapter 2 · continue to the next shloka" : "Bhagavad Gita Foundations · Chapter 1"}</p>
+              <span className="eyebrow">{copy.welcome}, {localizedLearnerName(learner.displayName, language)}</span>
+              <h2>{learner.completedLessons.length ? copy.continueTitle : copy.readyTitle}</h2>
+              <p>{copy.chapter} {localizeStudyDigits(chapterStudyComplete ? 2 : 1, language)} · {copy.shloka}</p>
             </div>
-            <a className="button primary" href={nextLearningHref}>Resume learning</a>
+            <a className="button primary" href={`${nextLearningHref}${nextLearningHref.includes("?") ? "&" : "?"}lang=${languageCode}`}>{copy.resume}</a>
           </div>
         </section>
       )}
 
-      <section className="section page-shell" aria-labelledby="featured-title">
-        <div className="section-heading">
-          <div><span className="eyebrow">Begin your journey</span><h2 id="featured-title">Featured collections</h2></div>
-          <a href="/library">View the full library →</a>
-        </div>
-        <div className="collection-grid">{collections.map((item) => <CollectionCard key={item.id} item={item} />)}</div>
-      </section>
-
-      <section className="section warm-section">
-        <div className="page-shell split-section">
-          <div>
-            <span className="eyebrow">Designed for a first-time learner</span>
-            <h2>One calm step at a time</h2>
-            <p>Every course explains what you will learn, how long it may take, which formats are available and how achievement is measured before you begin.</p>
-            <button className="button primary" onClick={onJoin}>Create your free learning profile</button>
+      <section className={`gita-guide-section language-${languageCode}`} aria-labelledby="gita-guide-title">
+        <div className="page-shell gita-guide-layout">
+          <div className="gita-guide-heading">
+            <span className="eyebrow">{copy.guideTag}</span>
+            <h2 id="gita-guide-title">{copy.guideTitle}</h2>
+            <p>{copy.guideText}</p>
           </div>
-          <ol className="journey-steps">
-            <li><span>01</span><div><strong>Choose a path</strong><p>Start with a recommendation or browse the complete library.</p></div></li>
-            <li><span>02</span><div><strong>Learn your way</strong><p>Switch between video, slides, scripture text, audio and explanation.</p></div></li>
-            <li><span>03</span><div><strong>Check understanding</strong><p>Pass each chapter with 60% or revisit targeted learning.</p></div></li>
-            <li><span>04</span><div><strong>Keep the achievement</strong><p>Earn badges and download a verifiable course certificate.</p></div></li>
-          </ol>
+          <article className="gita-entry-card ai-path-card gita-guide-card">
+            <div className="gita-pathfinder-suggestions" aria-label={copy.suggestionsAria}>
+              {copy.suggestions.map(([label, question]) => (
+                <button key={label} type="button" onClick={() => void askGuide(question)} disabled={pathLoading}>{label}</button>
+              ))}
+            </div>
+            <form className="gita-pathfinder-form" onSubmit={submitPathQuestion}>
+              <label htmlFor="gita-path-question">{copy.questionLabel}</label>
+              <textarea id="gita-path-question" value={pathQuestion} onChange={(event) => setPathQuestion(event.target.value)} maxLength={300} rows={3} placeholder={copy.placeholder} />
+              <div><small>{localizeStudyDigits(pathQuestion.length, language)}/{localizeStudyDigits(300, language)} · {copy.privacy}</small><button type="submit" disabled={pathLoading || pathQuestion.trim().length < 3}>{pathLoading ? copy.asking : copy.ask}</button></div>
+            </form>
+            {pathError && <p className="gita-pathfinder-error" role="alert">{pathError}</p>}
+            {pathResponse && (
+              <section className={`gita-pathfinder-result ${pathResponse.grounded ? "grounded" : "limited"}`} aria-live="polite">
+                <span>{pathResponse.grounded ? `✓ ${copy.suggested}` : copy.broader}</span>
+                <h3>{pathRecommendation?.title || copy.essentials}</h3>
+                <p>{language === "English" ? pathResponse.answer : pathResponse.grounded ? copy.groundedAnswer : copy.limitedAnswer}</p>
+                {pathRecommendation && <small>{copy.why}: {pathRecommendation.detail}</small>}
+                <a className="button saffron wide" href={pathRecommendation?.href || `/course/gita/chapter/1/shloka/1?lang=${languageCode}`}>{pathRecommendation ? copy.openLesson : copy.essentials} <span aria-hidden="true">→</span></a>
+              </section>
+            )}
+          </article>
         </div>
       </section>
     </>
@@ -561,63 +737,6 @@ function LibraryView({ initialSearch }: { initialSearch: string }) {
           </div>
           <div className="collection-notice" id="collection-notice"><strong>Progressive publication</strong><p>The Jagannatha Dham corpus is the first major collection. Items marked “in preparation” show the planned catalogue while scholarly review continues.</p></div>
         </div>
-      </section>
-    </main>
-  );
-}
-
-function CourseView({ learner, onJoin }: { learner: Learner; onJoin: () => void }) {
-  const completedShlokas = completedChapterTwoShlokas(learner);
-  const chapterStudyComplete = chapterTwoStudyComplete(learner);
-  const progress = completedShlokas * 4;
-  const primaryHref = completedShlokas ? nextChapterTwoHref(learner) : "/course/gita/foundations";
-  const primaryLabel = chapterStudyComplete ? "Begin chapter assessment" : completedShlokas ? "Continue to next shloka" : "Begin with foundations";
-  return (
-    <main className="page-main">
-      <section className="course-hero">
-        <div className="page-shell course-hero-inner">
-          <div>
-            <div className="breadcrumbs"><a href="/library">Library</a><span>/</span><span>Bhagavad Gita</span></div>
-            <span className="eyebrow">Beginner course · verified learning pilot</span>
-            <h1>Bhagavad Gita:<br />Foundations</h1>
-            <p>A chapter-by-chapter introduction that keeps the original scripture visible while offering accessible explanation, reflection and knowledge checks.</p>
-            <div className="course-facts"><span>18 chapters</span><span>12–16 hours</span><span>Video + slides + text</span><span>60% pass mark</span></div>
-            <div className="hero-actions">
-              <a className="button saffron" href={primaryHref}>{primaryLabel}</a>
-              {!learner.memberJoined && <button className="button outline-light" onClick={onJoin}>Join free to save progress</button>}
-            </div>
-          </div>
-          <aside className="course-progress-card">
-            <div className="progress-orbit"><strong>{progress}%</strong><span>course progress</span></div>
-            <h2>{learner.memberJoined ? `Namaste, ${learner.displayName}` : "Begin when you are ready"}</h2>
-            <p>{chapterStudyComplete ? "The prescribed Chapter 2 shlokas are complete. The chapter assessment is ready." : completedShlokas ? "Continue shloka by shloka. Assessment remains at the end of the chapter." : "Begin with the shared context, verse layers and readiness pathway before Chapter 1."}</p>
-            <div className="mini-progress"><span style={{ width: `${progress}%` }} /></div>
-            <small>{completedShlokas ? `${completedShlokas} of ${chapterTwoShlokaIds.length} pilot shlokas complete` : "Progress begins after your first shloka"}</small>
-          </aside>
-        </div>
-      </section>
-      <section className="page-shell section course-layout">
-        <div>
-          <div className="section-heading"><div><span className="eyebrow">Course pathway</span><h2>Learn chapter by chapter</h2></div><span className="pass-chip">Pass mark 60%</span></div>
-          <div className="chapter-list">
-            {gitaChapters.map((chapter) => {
-              const available = chapter.status === "available";
-              return (
-                <article key={chapter.number} className={`chapter-row ${available ? "featured" : ""}`}>
-                  <span className="chapter-number">{String(chapter.number).padStart(2, "0")}</span>
-                  <div><h3>{chapter.title}</h3><p>{chapter.focus}</p></div>
-                  <div className="chapter-state">
-                    {available && chapterStudyComplete ? <><span className="passed">Chapter study complete</span><a href="/lesson/gita-2-47">Review shlokas →</a></> : available && completedShlokas ? <><span>{completedShlokas} of {chapterTwoShlokaIds.length} shlokas</span><a href={nextChapterTwoHref(learner)}>Continue →</a></> : <a href={`/course/gita/chapter/${chapter.slug}`}>{available ? "Open chapter" : "Preview chapter"} →</a>}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-        <aside className="course-side">
-          <div className="side-card"><span className="eyebrow">How achievement works</span><ol><li>Complete the prescribed shlokas</li><li>Take the end-of-chapter assessment</li><li>Score 60% or higher</li><li>Receive a chapter badge</li></ol></div>
-          <div className="side-card source-card"><span>✓</span><h3>Source-aware learning</h3><p>Scripture, translation, commentary and modern explanation are shown as distinct layers.</p><a href="/library">View editorial standards →</a></div>
-        </aside>
       </section>
     </main>
   );
@@ -912,7 +1031,7 @@ export default function LibraryApp({
   const [busyDemoProfile, setBusyDemoProfile] = useState<DemoProfileId | "clear" | null>(null);
   const [studyLanguageOverride, setStudyLanguageOverride] = useState<StudyLanguage | null>(initialStudyLanguage ?? null);
   const studyLanguage = studyLanguageOverride ?? resolveStudyLanguage(learner.preferredLanguage);
-  const pageLanguage = view === "lesson" ? studyLanguage : "English";
+  const pageLanguage = view === "lesson" || view === "home" || view === "course" ? studyLanguage : "English";
 
   useEffect(() => {
     fetch("/api/progress")
@@ -1008,9 +1127,8 @@ export default function LibraryApp({
       )}
       <Header view={view} learner={learner} authenticated={authenticated} onJoin={join} language={pageLanguage} />
       <div id="main-content">
-        {view === "home" && <HomeView learner={learner} onJoin={join} />}
+        {(view === "home" || view === "course") && <HomeView learner={learner} onJoin={join} language={pageLanguage} />}
         {view === "library" && <LibraryView initialSearch={initialSearch} />}
-        {view === "course" && <CourseView learner={learner} onJoin={join} />}
         {view === "lesson" && <LessonView learner={learner} save={save} saving={saving} onJoin={join} reference={lessonReference} language={studyLanguage} onLanguageChange={changeStudyLanguage} />}
         {view === "assessment" && <AssessmentView learner={learner} save={save} saving={saving} onJoin={join} />}
         {view === "dashboard" && <DashboardView learner={learner} onJoin={join} />}

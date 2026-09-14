@@ -4,19 +4,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import StudyCompanion from "../../../../components/StudyCompanion";
 import { livingBlissGitaContext } from "../../../../platform/context";
-import { getGitaChapter, gitaChapters } from "../../course-data";
+import { databaseGitaVerseHref, getDatabaseGitaChapters } from "../../gita-repository";
 
 type ChapterPageProps = {
   params: Promise<{ chapter: string }>;
 };
 
-export function generateStaticParams() {
-  return gitaChapters.map((chapter) => ({ chapter: chapter.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: ChapterPageProps): Promise<Metadata> {
   const { chapter: slug } = await params;
-  const chapter = getGitaChapter(slug);
+  const chapters = await getDatabaseGitaChapters();
+  const chapter = chapters.find((item) => item.slug === slug);
   return chapter
     ? { title: `Chapter ${chapter.number}: ${chapter.title}` }
     : { title: "Bhagavad Gita chapter" };
@@ -24,11 +23,12 @@ export async function generateMetadata({ params }: ChapterPageProps): Promise<Me
 
 export default async function GitaChapterPage({ params }: ChapterPageProps) {
   const { chapter: slug } = await params;
-  const chapter = getGitaChapter(slug);
+  const chapters = await getDatabaseGitaChapters();
+  const chapter = chapters.find((item) => item.slug === slug);
   if (!chapter) notFound();
 
-  const previous = gitaChapters[chapter.number - 2];
-  const next = gitaChapters[chapter.number];
+  const previous = chapters[chapter.number - 2];
+  const next = chapters[chapter.number];
 
   return (
     <div className="course-workspace-root">
@@ -56,10 +56,10 @@ export default async function GitaChapterPage({ params }: ChapterPageProps) {
           </Link>
           <div className="course-rail-progress">
             <span>18-chapter pathway</span>
-            <small>1 chapter learning pilot available</small>
+            <small>701 Sanskrit shlokas available</small>
           </div>
           <nav>
-            {gitaChapters.map((item) => (
+            {chapters.map((item) => (
               <Link
                 key={item.number}
                 href={`/course/gita/chapter/${item.slug}`}
@@ -68,7 +68,7 @@ export default async function GitaChapterPage({ params }: ChapterPageProps) {
                 <span>{String(item.number).padStart(2, "0")}</span>
                 <div>
                   <strong>{item.title}</strong>
-                  <small>{item.status === "available" ? "Learning pilot" : "Curriculum preview"}</small>
+                  <small>{item.verseCount} shlokas · full text</small>
                 </div>
               </Link>
             ))}
@@ -82,18 +82,18 @@ export default async function GitaChapterPage({ params }: ChapterPageProps) {
           <div className="edition-banner">
             <div>
               <span className="eyebrow">Active edition</span>
-              <strong>{livingBlissGitaContext.editionName}</strong>
-              <small>{livingBlissGitaContext.editionAuthority} · {livingBlissGitaContext.editionVersion}</small>
+              <strong>Living Bliss open Sanskrit text</strong>
+              <small>Devanagari · Public-domain source edition · Complete text</small>
             </div>
-            <span className="edition-status">Prototype content</span>
+            <span className="edition-status">Published Sanskrit text</span>
           </div>
 
           <section className="chapter-hero-panel">
             <div className="chapter-ordinal"><span>Chapter</span><strong>{chapter.number}</strong><small>of 18</small></div>
             <div>
-              <span className="eyebrow">Bhagavad Gita: Foundations</span>
+              <span className="eyebrow">Shreemad Bhagavad Geeta · Chapter {chapter.number}</span>
               <h1>{chapter.title}</h1>
-              <p>{chapter.focus}</p>
+              <p>{chapter.focus} Study all {chapter.verseCount} shlokas in canonical sequence.</p>
             </div>
           </section>
 
@@ -107,14 +107,14 @@ export default async function GitaChapterPage({ params }: ChapterPageProps) {
 
           <section className="chapter-learning-pattern" aria-labelledby="chapter-path-title">
             <div className="chapter-section-heading">
-              <div><span className="eyebrow">Nine-step chapter pattern</span><h2 id="chapter-path-title">Your learning path</h2></div>
-              <span>{chapter.status === "available" ? "Pilot ready" : "Awaiting approved edition content"}</span>
+              <div><span className="eyebrow">Academic chapter method</span><h2 id="chapter-path-title">How to study this chapter</h2></div>
+              <span>{chapter.verseCount} shlokas · sequential study</span>
             </div>
             <ol>
               {[
                 ["Orient", "Narrative, essential question and outcomes"],
-                ["Encounter", "Selected verses and authorised translation"],
-                ["Understand", "Clearly labelled commentary and explanation"],
+                ["Encounter", "Every shloka in canonical sequence"],
+                ["Understand", "Separately reviewed translation and analysis layers"],
                 ["Explore", "Video, audio, slides and optional full text"],
                 ["Apply", "A life-connected scenario or practice"],
                 ["Check", "Low-stakes understanding check"],
@@ -130,17 +130,23 @@ export default async function GitaChapterPage({ params }: ChapterPageProps) {
             </ol>
           </section>
 
-          {chapter.status === "available" ? (
-            <section className="chapter-ready-card">
-              <div><span className="eyebrow">Available learning pilot</span><h2>Study Chapter 2 shlokas</h2><p>Begin with Bhagavad Gita 2.47 and follow the Devanagari shloka, English transliteration, sandhi-vicheda, word meanings and selected-language translation. The assessment unlocks after the chapter study is complete.</p></div>
-              <Link className="button primary" href="/lesson/gita-2-47">Begin shloka study →</Link>
-            </section>
-          ) : (
-            <section className="chapter-governance-card">
-              <span aria-hidden="true">✓</span>
-              <div><strong>Curriculum structure is ready; authoritative content is protected.</strong><p>Verse selections, translations, commentary, media and assessments will appear only after the edition owner completes scholarly, pedagogical, accessibility and rights approval.</p></div>
-            </section>
-          )}
+          <section className="chapter-verse-index" aria-labelledby="chapter-verses-title">
+            <div className="chapter-section-heading">
+              <div><span className="eyebrow">Complete chapter text</span><h2 id="chapter-verses-title">Shlokas 1–{chapter.verseCount}</h2></div>
+              <Link className="button primary" href={databaseGitaVerseHref(chapter.verses[0])}>Begin with Shloka 1 →</Link>
+            </div>
+            <nav aria-label={`Chapter ${chapter.number} shlokas`}>
+              {chapter.verses.map((verse) => (
+                <Link key={verse.reference} href={databaseGitaVerseHref(verse)}>
+                  <small>Shloka</small>
+                  <strong>{verse.reference}</strong>
+                </Link>
+              ))}
+            </nav>
+            {chapter.number === 13 && (
+              <p className="chapter-recension-note"><span aria-hidden="true">ⓘ</span>This open edition numbers the prefatory question by Arjuna as 13.1; the complete course therefore contains 701 numbered shlokas.</p>
+            )}
+          </section>
 
           <nav className="chapter-pagination" aria-label="Adjacent chapters">
             {previous ? <Link href={`/course/gita/chapter/${previous.slug}`}><small>Previous chapter</small><strong>← {previous.title}</strong></Link> : <span />}

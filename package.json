@@ -13,6 +13,7 @@
     "test": "vitest run && eslint . --ignore-pattern dist --ignore-pattern .next && next build",
     "test:unit": "vitest run",
     "auth:cleanup": "node scripts/cleanup-auth.mjs",
+    "db:gita:apply": "node scripts/apply-gita-corpus.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

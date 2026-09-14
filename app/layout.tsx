@@ -3,22 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Living Bliss Digital Library",
+    default: "श्रीमद्भगवद्गीता · Shreemad Bhagavad Geeta",
     template: "%s | Living Bliss Digital Library",
   },
   description:
-    "Authentic scriptures, guided chapter-by-chapter learning, personal progress, assessments and verified achievements.",
+    "A structured, verse-by-verse study of Shreemad Bhagavad Geeta across all 18 chapters, with the Sanskrit text in Devanagari.",
   metadataBase: new URL("https://library.livingbliss.org"),
   openGraph: {
-    title: "Living Bliss Digital Library",
-    description: "Authentic scripture • Guided learning • Progress & certificates",
+    title: "श्रीमद्भगवद्गीता · Shreemad Bhagavad Geeta",
+    description: "Study all 18 chapters in sequence, one Sanskrit shloka at a time.",
     type: "website",
     images: ["/og.png"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Living Bliss Digital Library",
-    description: "Authentic scripture • Guided learning • Progress & certificates",
+    title: "श्रीमद्भगवद्गीता · Shreemad Bhagavad Geeta",
+    description: "Study all 18 chapters in sequence, one Sanskrit shloka at a time.",
     images: ["/og.png"],
   },
   icons: {
@@ -34,7 +34,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <footer className="global-copyright" aria-label="Copyright">
+          <span>© {new Date().getFullYear()} Living Bliss. All rights reserved.</span>
+        </footer>
+      </body>
     </html>
   );
 }
