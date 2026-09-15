@@ -44,6 +44,17 @@ export type DatabaseGitaLocalizedContent = {
   } | null;
 };
 
+export type DatabaseGitaCommentary = {
+  id: string;
+  commentatorName: string;
+  tradition: string;
+  editionTitle: string;
+  versionLabel: string;
+  text: string;
+  scriptCode: "Deva" | "Orya";
+  editorialStatus: string;
+};
+
 type ChapterRow = RowDataPacket & {
   chapter_number: number;
   title: string;
@@ -86,6 +97,43 @@ type TranslationRow = RowDataPacket & {
   text: string;
   translator: string | null;
   source_locator: string | null;
+};
+
+type CommentaryRow = RowDataPacket & {
+  id: string;
+  commentator_name: string;
+  devanagari_name: string | null;
+  tradition_slug: string | null;
+  tradition_name: string | null;
+  edition_title: string;
+  version_label: string;
+  text: string;
+  editorial_status: string;
+};
+
+const devanagariToOdiaMap = new Map([
+  ["ँ", "ଁ"], ["ं", "ଂ"], ["ः", "ଃ"], ["अ", "ଅ"], ["आ", "ଆ"], ["इ", "ଇ"], ["ई", "ଈ"], ["उ", "ଉ"], ["ऊ", "ଊ"],
+  ["ऋ", "ଋ"], ["ॠ", "ୠ"], ["ऌ", "ଌ"], ["ॡ", "ୡ"], ["ए", "ଏ"], ["ऐ", "ଐ"], ["ओ", "ଓ"], ["औ", "ଔ"],
+  ["क", "କ"], ["ख", "ଖ"], ["ग", "ଗ"], ["घ", "ଘ"], ["ङ", "ଙ"], ["च", "ଚ"], ["छ", "ଛ"], ["ज", "ଜ"], ["झ", "ଝ"], ["ञ", "ଞ"],
+  ["ट", "ଟ"], ["ठ", "ଠ"], ["ड", "ଡ"], ["ढ", "ଢ"], ["ण", "ଣ"], ["त", "ତ"], ["थ", "ଥ"], ["द", "ଦ"], ["ध", "ଧ"], ["न", "ନ"],
+  ["प", "ପ"], ["फ", "ଫ"], ["ब", "ବ"], ["भ", "ଭ"], ["म", "ମ"], ["य", "ଯ"], ["र", "ର"], ["ल", "ଲ"], ["व", "ଵ"],
+  ["श", "ଶ"], ["ष", "ଷ"], ["स", "ସ"], ["ह", "ହ"], ["ळ", "ଳ"], ["ऽ", "ଽ"], ["़", "଼"],
+  ["ा", "ା"], ["ि", "ି"], ["ी", "ୀ"], ["ु", "ୁ"], ["ू", "ୂ"], ["ृ", "ୃ"], ["ॄ", "ୄ"], ["ॢ", "ୢ"], ["ॣ", "ୣ"],
+  ["े", "େ"], ["ै", "ୈ"], ["ो", "ୋ"], ["ौ", "ୌ"], ["्", "୍"], ["ॐ", "ଓଁ"],
+  ["०", "୦"], ["१", "୧"], ["२", "୨"], ["३", "୩"], ["४", "୪"], ["५", "୫"], ["६", "୬"], ["७", "୭"], ["८", "୮"], ["९", "୯"],
+  ["0", "୦"], ["1", "୧"], ["2", "୨"], ["3", "୩"], ["4", "୪"], ["5", "୫"], ["6", "୬"], ["7", "୭"], ["8", "୮"], ["9", "୯"],
+]);
+
+export function devanagariToOdia(value: string) {
+  return Array.from(value.normalize("NFC"), (character) => devanagariToOdiaMap.get(character) ?? character).join("");
+}
+
+const localizedTraditions: Record<string, Record<StudyLanguageCode, string>> = {
+  "advaita-vedanta": { en: "Advaita Vedānta", hi: "अद्वैत वेदान्त", or: "ଅଦ୍ୱୈତ ବେଦାନ୍ତ" },
+  "dvaita-vedanta": { en: "Dvaita Vedānta", hi: "द्वैत वेदान्त", or: "ଦ୍ୱୈତ ବେଦାନ୍ତ" },
+  "vishishtadvaita-vedanta": { en: "Viśiṣṭādvaita Vedānta", hi: "विशिष्टाद्वैत वेदान्त", or: "ବିଶିଷ୍ଟାଦ୍ୱୈତ ବେଦାନ୍ତ" },
+  "kashmir-shaivism": { en: "Kashmir Śaivism", hi: "काश्मीर शैव दर्शन", or: "କାଶ୍ମୀର ଶୈବ ଦର୍ଶନ" },
+  "shuddhadvaita-vedanta": { en: "Śuddhādvaita Vedānta", hi: "शुद्धाद्वैत वेदान्त", or: "ଶୁଦ୍ଧାଦ୍ୱୈତ ବେଦାନ୍ତ" },
 };
 
 const loadGitaSequence = cache(async (): Promise<DatabaseGitaVerseSummary[]> => {
@@ -280,6 +328,66 @@ export const getDatabaseGitaVerse = cache(async (chapterNumber: number, verseNum
     chapterFocus: row.chapter_focus ?? "",
     chapterEssentialQuestion: row.chapter_essential_question ?? "",
   };
+});
+
+export const getDatabaseGitaCommentaries = cache(async (
+  chapterNumber: number,
+  verseNumber: number,
+  languageCode: StudyLanguageCode = "en",
+): Promise<DatabaseGitaCommentary[]> => {
+  const [rows] = await getDb().execute<CommentaryRow[]>(
+    `SELECT
+       cp.id,
+       person.canonical_name AS commentator_name,
+       sanskrit_name.display_name AS devanagari_name,
+       tradition.slug AS tradition_slug,
+       tradition.canonical_name AS tradition_name,
+       edition.title AS edition_title,
+       edition.version_label,
+       cp.text,
+       cp.editorial_status
+     FROM commentary_passages cp
+     JOIN commentary_editions edition ON edition.id = cp.commentary_edition_id
+     JOIN commentary_works work ON work.id = edition.commentary_work_id
+     JOIN persons person ON person.id = work.commentator_person_id
+     JOIN scripture_verses verse ON verse.id = cp.verse_id
+     JOIN scripture_chapters chapter ON chapter.id = verse.chapter_id
+     LEFT JOIN person_names sanskrit_name
+       ON sanskrit_name.person_id = person.id AND sanskrit_name.language_code = 'sa'
+     LEFT JOIN commentary_traditions tradition ON tradition.id = work.tradition_id
+     WHERE work.scripture_work_id = 'work-bhagavad-gita'
+       AND edition.owner_organisation_id = 'org-living-bliss'
+       AND edition.language_code = 'sa'
+       AND cp.passage_type = 'full-text'
+       AND chapter.chapter_number = ?
+       AND verse.verse_number = ?
+     ORDER BY FIELD(person.slug,
+       'adi-shankaracharya', 'sri-ramanujacharya', 'sri-madhvacharya',
+       'sridhara-svami', 'abhinavagupta', 'anandagiri', 'dhanpati',
+       'madhusudana-saraswati', 'nilakantha', 'sri-jayatirtha',
+       'sri-purushottamji', 'sri-vallabhacharya', 'vedanta-desika-venkatanatha'),
+       person.canonical_name`,
+    [chapterNumber, String(verseNumber)],
+  );
+
+  return rows.map((row) => {
+    const devanagariName = row.devanagari_name ?? row.commentator_name;
+    const tradition = row.tradition_slug
+      ? localizedTraditions[row.tradition_slug]?.[languageCode] ?? row.tradition_name ?? ""
+      : row.tradition_name ?? "";
+    return {
+      id: row.id,
+      commentatorName: languageCode === "or"
+        ? devanagariToOdia(devanagariName)
+        : languageCode === "hi" ? devanagariName : row.commentator_name,
+      tradition,
+      editionTitle: row.edition_title,
+      versionLabel: row.version_label,
+      text: languageCode === "or" ? devanagariToOdia(row.text) : row.text,
+      scriptCode: languageCode === "or" ? "Orya" : "Deva",
+      editorialStatus: row.editorial_status,
+    };
+  });
 });
 
 export const getDatabaseAdjacentGitaVerses = cache(async (order: number) => {

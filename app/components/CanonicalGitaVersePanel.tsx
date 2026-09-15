@@ -12,19 +12,29 @@ type LocalizedContent = {
   translation: { text: string; translator: string | null; sourceLocator: string | null } | null;
 };
 
+type Commentary = {
+  id: string;
+  commentatorName: string;
+  tradition: string;
+  editionTitle: string;
+  versionLabel: string;
+  text: string;
+  scriptCode: "Deva" | "Orya";
+  editorialStatus: string;
+};
+
 type CanonicalGitaVersePanelProps = {
   reference: string;
   devanagari: string;
   odia: string;
   transliteration: string;
   localizedContent: Record<StudyLanguage, LocalizedContent>;
+  commentaries: Commentary[];
   language: StudyLanguage;
   order: number;
   totalVerses: number;
   sourceUrl: string | null;
 };
-
-type CommentatorId = "shankara" | "ramanuja" | "madhva" | "sridhara";
 
 const languageOptions: Array<{ code: StudyLanguage; speech: string }> = [
   { code: "en", speech: "en-IN" },
@@ -51,6 +61,8 @@ const copy = {
     translation: "Translation", translationPending: "Approved English translation pending",
     translationPolicy: "This layer is reserved for a named translator, edition, source locator and publication approval. No unattributed translation is presented as authoritative.",
     commentary: "Bhāṣya · Commentary", selectCommentator: "Select bhāṣyakāra or guru", tradition: "Commentarial tradition", editorialStatus: "Editorial status",
+    draftStatus: "Draft Sanskrit text · scholarly review pending", edition: "Edition",
+    localEdition: "Living Bliss Sanskrit draft edition",
     noCommentary: "No approved commentary passage is linked to this shloka yet. This section is ready for a licensed text or reviewed summary with full attribution.",
     governance: "Commentary remains separate from the Sanskrit source and shows commentator, tradition, edition, rights and version details. Approved passages are stored and served by Living Bliss.",
     academicRecord: "Academic record", coursePosition: "Course position", storage: "Content storage", database: "Living Bliss database",
@@ -68,6 +80,8 @@ const copy = {
     translation: "अनुवाद", translationPending: "अनुमोदित हिन्दी अनुवाद प्रतीक्षित",
     translationPolicy: "यह स्तर नामित अनुवादक, संस्करण, स्रोत-सन्दर्भ और प्रकाशन-अनुमोदन के लिए सुरक्षित है। कोई अनाम अनुवाद प्रामाणिक रूप में प्रस्तुत नहीं किया जाता।",
     commentary: "भाष्य · टीका", selectCommentator: "भाष्यकार या गुरु चुनें", tradition: "भाष्य परम्परा", editorialStatus: "सम्पादकीय स्थिति",
+    draftStatus: "प्रारूप संस्कृत पाठ · विद्वत् समीक्षा अपेक्षित", edition: "संस्करण",
+    localEdition: "लिविंग ब्लिस संस्कृत प्रारूप संस्करण",
     noCommentary: "इस श्लोक से अभी कोई अनुमोदित भाष्य जुड़ा नहीं है। यह भाग पूर्ण स्रोत-सन्दर्भ सहित अधिकृत पाठ या समीक्षित सार के लिए तैयार है।",
     governance: "भाष्य संस्कृत मूल से अलग रहता है और भाष्यकार, परम्परा, संस्करण, अधिकार तथा संस्करण-विवरण दिखाता है। अनुमोदित सामग्री Living Bliss द्वारा संग्रहित और प्रस्तुत की जाती है।",
     academicRecord: "शैक्षणिक अभिलेख", coursePosition: "पाठ्यक्रम स्थान", storage: "सामग्री संग्रह", database: "Living Bliss डेटाबेस",
@@ -85,26 +99,14 @@ const copy = {
     translation: "ଅନୁବାଦ", translationPending: "ଅନୁମୋଦିତ ଓଡ଼ିଆ ଅନୁବାଦ ଅପେକ୍ଷାରତ",
     translationPolicy: "ଏହି ସ୍ତର ନାମିତ ଅନୁବାଦକ, ସଂସ୍କରଣ, ଉତ୍ସ-ସନ୍ଦର୍ଭ ଏବଂ ପ୍ରକାଶନ ଅନୁମୋଦନ ପାଇଁ ସଂରକ୍ଷିତ। କୌଣସି ଅନାମିତ ଅନୁବାଦକୁ ପ୍ରାମାଣିକ ଭାବେ ଦର୍ଶାଯାଏ ନାହିଁ।",
     commentary: "ଭାଷ୍ୟ · ଟୀକା", selectCommentator: "ଭାଷ୍ୟକାର କିମ୍ବା ଗୁରୁ ବାଛନ୍ତୁ", tradition: "ଭାଷ୍ୟ ପରମ୍ପରା", editorialStatus: "ସମ୍ପାଦକୀୟ ସ୍ଥିତି",
+    draftStatus: "ପ୍ରାରୂପ ସଂସ୍କୃତ ପାଠ · ବିଦ୍ୱତ୍ ସମୀକ୍ଷା ଅପେକ୍ଷାରତ", edition: "ସଂସ୍କରଣ",
+    localEdition: "ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ସଂସ୍କୃତ ପ୍ରାରୂପ ସଂସ୍କରଣ",
     noCommentary: "ଏହି ଶ୍ଲୋକ ସହ ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ଅନୁମୋଦିତ ଭାଷ୍ୟ ସଂଯୁକ୍ତ ହୋଇନାହିଁ। ପୂର୍ଣ୍ଣ ଉତ୍ସ-ସନ୍ଦର୍ଭ ସହ ଅଧିକୃତ ପାଠ କିମ୍ବା ସମୀକ୍ଷିତ ସାରାଂଶ ପାଇଁ ଏହି ଭାଗ ପ୍ରସ୍ତୁତ।",
     governance: "ଭାଷ୍ୟ ସଂସ୍କୃତ ମୂଳ ପାଠରୁ ପୃଥକ ରହେ ଏବଂ ଭାଷ୍ୟକାର, ପରମ୍ପରା, ସଂସ୍କରଣ, ଅଧିକାର ଓ ସଂସ୍କରଣ ବିବରଣୀ ଦର୍ଶାଏ। ଅନୁମୋଦିତ ବିଷୟବସ୍ତୁ ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ଦ୍ୱାରା ସଂରକ୍ଷିତ ଓ ପରିବେଷିତ ହୁଏ।",
     academicRecord: "ଶିକ୍ଷାଗତ ଅଭିଲେଖ", coursePosition: "ପାଠ୍ୟକ୍ରମ ସ୍ଥାନ", storage: "ବିଷୟବସ୍ତୁ ସଂରକ୍ଷଣ", database: "ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ଡାଟାବେସ୍",
     reviewNote: "ସଂସ୍କୃତ ପାଠ, ଲିପ୍ୟନ୍ତରଣ ଏବଂ ଉତ୍ସ ଶବ୍ଦାର୍ଥ ସଂସ୍କରଣ ସହ ସଂରକ୍ଷିତ। ଅନୁବାଦ, ଦେବନାଗରୀ ସନ୍ଧି-ବିଚ୍ଛେଦ ଓ ଭାଷ୍ୟ ସୁରକ୍ଷିତ ସମୀକ୍ଷା ସ୍ତର ଭାବେ ରହିଛି।",
   },
 } as const;
-
-const commentators: Array<{ id: CommentatorId; name: string; tradition: string }> = [
-  { id: "shankara", name: "Ādi Śaṅkarācārya", tradition: "Advaita Vedānta" },
-  { id: "ramanuja", name: "Śrī Rāmānujācārya", tradition: "Viśiṣṭādvaita Vedānta" },
-  { id: "madhva", name: "Śrī Madhvācārya", tradition: "Dvaita Vedānta" },
-  { id: "sridhara", name: "Śrīdhara Svāmī", tradition: "Classical Vaiṣṇava tradition" },
-];
-
-const odiaCommentators: Record<CommentatorId, { name: string; tradition: string }> = {
-  shankara: { name: "ଆଦି ଶଙ୍କରାଚାର୍ଯ୍ୟ", tradition: "ଅଦ୍ୱୈତ ବେଦାନ୍ତ" },
-  ramanuja: { name: "ଶ୍ରୀ ରାମାନୁଜାଚାର୍ଯ୍ୟ", tradition: "ବିଶିଷ୍ଟାଦ୍ୱୈତ ବେଦାନ୍ତ" },
-  madhva: { name: "ଶ୍ରୀ ମଧ୍ୱାଚାର୍ଯ୍ୟ", tradition: "ଦ୍ୱୈତ ବେଦାନ୍ତ" },
-  sridhara: { name: "ଶ୍ରୀଧର ସ୍ୱାମୀ", tradition: "ଶାସ୍ତ୍ରୀୟ ବୈଷ୍ଣବ ପରମ୍ପରା" },
-};
 
 function localizeDigits(value: string | number, language: StudyLanguage) {
   const digits = language === "or" ? "୦୧୨୩୪୫୬୭୮୯" : language === "hi" ? "०१२३४५६७८९" : "0123456789";
@@ -115,11 +117,11 @@ function StepHeading({ number, children, id }: { number: string; children: strin
   return <div className="compact-step-heading"><span>{number}</span><h2 id={id}>{children}</h2></div>;
 }
 
-export default function CanonicalGitaVersePanel({ reference, devanagari, odia, transliteration, localizedContent, language, order, totalVerses }: CanonicalGitaVersePanelProps) {
+export default function CanonicalGitaVersePanel({ reference, devanagari, odia, transliteration, localizedContent, commentaries, language, order, totalVerses }: CanonicalGitaVersePanelProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [selectedCommentator, setSelectedCommentator] = useState<CommentatorId>("shankara");
+  const [selectedCommentaryId, setSelectedCommentaryId] = useState(commentaries[0]?.id ?? "");
   const [isReading, setIsReading] = useState(false);
   const [speechNotice, setSpeechNotice] = useState("");
   const labels = copy[language];
@@ -129,8 +131,7 @@ export default function CanonicalGitaVersePanel({ reference, devanagari, odia, t
   const sourceWords = language === "en" ? localizedContent.en.wordGlosses : selectedContent.wordGlosses;
   const displayedScripture = language === "or" ? odia : devanagari;
   const displayedScriptureLanguage = language === "or" ? "sa-Orya" : "sa-Deva";
-  const commentator = commentators.find((item) => item.id === selectedCommentator) ?? commentators[0];
-  const displayedCommentator = language === "or" ? odiaCommentators[selectedCommentator] : commentator;
+  const displayedCommentary = commentaries.find((item) => item.id === selectedCommentaryId) ?? commentaries[0];
 
   useEffect(() => () => window.speechSynthesis?.cancel(), []);
 
@@ -229,9 +230,9 @@ export default function CanonicalGitaVersePanel({ reference, devanagari, odia, t
         <section className="compact-study-card bhasya-card" aria-labelledby={`bhasya-${reference}`}>
           <div className="bhasya-card-head">
             <StepHeading number={localizeDigits("06", language)} id={`bhasya-${reference}`}>{labels.commentary}</StepHeading>
-            <label className="bhasya-selector" htmlFor={`bhasya-commentator-${reference}`}><span>{labels.selectCommentator}</span><select id={`bhasya-commentator-${reference}`} value={selectedCommentator} onChange={(event) => setSelectedCommentator(event.target.value as CommentatorId)}>{commentators.map((item) => <option key={item.id} value={item.id}>{language === "or" ? odiaCommentators[item.id].name : item.name}</option>)}</select></label>
+            {commentaries.length > 0 && <label className="bhasya-selector" htmlFor={`bhasya-commentator-${reference}`}><span>{labels.selectCommentator}</span><select id={`bhasya-commentator-${reference}`} value={displayedCommentary?.id ?? ""} onChange={(event) => setSelectedCommentaryId(event.target.value)}>{commentaries.map((item) => <option key={item.id} value={item.id}>{item.commentatorName}</option>)}</select></label>}
           </div>
-          <div className="bhasya-content"><div className="bhasya-attribution"><span>{labels.tradition}</span><strong>{displayedCommentator.name}</strong><small>{displayedCommentator.tradition}</small></div><div className="bhasya-reading"><span>{labels.editorialStatus}</span><p>{labels.noCommentary}</p></div></div>
+          {displayedCommentary ? <div className="bhasya-content"><div className="bhasya-attribution"><span>{labels.tradition}</span><strong>{displayedCommentary.commentatorName}</strong><small>{displayedCommentary.tradition}</small><span className="bhasya-edition-label">{labels.edition}</span><small>{language === "or" ? labels.localEdition : `${displayedCommentary.editionTitle} · ${displayedCommentary.versionLabel}`}</small></div><div className="bhasya-reading" lang={displayedCommentary.scriptCode === "Orya" ? "sa-Orya" : "sa-Deva"}><span>{labels.editorialStatus}</span><strong className="bhasya-status">{labels.draftStatus}</strong><p>{displayedCommentary.text}</p></div></div> : <div className="bhasya-content bhasya-empty"><div className="bhasya-reading"><span>{labels.editorialStatus}</span><p>{labels.noCommentary}</p></div></div>}
           <div className="bhasya-governance"><p><span aria-hidden="true">ⓘ</span>{labels.governance}</p></div>
         </section>
 

@@ -10,6 +10,7 @@ import {
   getDatabaseAdjacentGitaVerses,
   getDatabaseGitaChapter,
   getDatabaseGitaChapters,
+  getDatabaseGitaCommentaries,
   getDatabaseGitaVerse,
   type StudyLanguageCode,
 } from "../../../../gita-repository";
@@ -92,10 +93,11 @@ export default async function GitaVersePage({ params, searchParams }: VersePageP
   const verseNumber = Number(values.verse);
   if (!Number.isInteger(chapterNumber) || !Number.isInteger(verseNumber)) notFound();
 
-  const [chapter, chapters, verse] = await Promise.all([
+  const [chapter, chapters, verse, commentaries] = await Promise.all([
     getDatabaseGitaChapter(chapterNumber, language),
     getDatabaseGitaChapters(language),
     getDatabaseGitaVerse(chapterNumber, verseNumber, language),
+    getDatabaseGitaCommentaries(chapterNumber, verseNumber, language),
   ]);
   if (!chapter || !verse) notFound();
 
@@ -161,6 +163,7 @@ export default async function GitaVersePage({ params, searchParams }: VersePageP
             odia={verse.odia}
             transliteration={verse.transliteration}
             localizedContent={verse.localizedContent}
+            commentaries={commentaries}
             language={language}
             order={verse.order}
             totalVerses={totalVerses}
