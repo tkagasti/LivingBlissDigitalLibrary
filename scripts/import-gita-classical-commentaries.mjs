@@ -213,6 +213,14 @@ const connection = await mysql.createConnection({
   connectTimeout: 15000,
 });
 
+const [[importLock]] = await connection.query(
+  "SELECT GET_LOCK('living-bliss-gita-commentary-import-v1', 120) AS acquired",
+);
+if (Number(importLock.acquired) !== 1) {
+  await connection.end();
+  throw new Error("Could not acquire the Gita commentary import lock");
+}
+
 const commentaryEditionIds = Object.values(commentators).map((definition) => definition.editionId);
 const [[existingCorpus]] = await connection.query(
   `SELECT
@@ -444,5 +452,6 @@ try {
   console.error(error instanceof Error ? error.message : "Commentary import failed.");
   process.exitCode = 1;
 } finally {
+  await connection.query("SELECT RELEASE_LOCK('living-bliss-gita-commentary-import-v1')");
   await connection.end();
 }

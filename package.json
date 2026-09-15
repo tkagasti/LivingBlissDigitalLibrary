@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/import-gita-classical-commentaries.mjs && next start",
+    "start": "next start",
     "test": "vitest run && eslint . --ignore-pattern dist --ignore-pattern .next && next build",
     "test:unit": "vitest run",
     "auth:cleanup": "node scripts/cleanup-auth.mjs",
