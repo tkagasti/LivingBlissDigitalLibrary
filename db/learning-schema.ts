@@ -5,6 +5,7 @@ import {
   index,
   int,
   json,
+  mediumtext,
   mysqlTable,
   primaryKey,
   text,
@@ -715,7 +716,7 @@ export const commentaryPassages = mysqlTable(
       .notNull()
       .references(() => scriptureVerses.id, { onDelete: "cascade" }),
     passageType: varchar("passage_type", { length: 24 }).notNull().default("summary"),
-    text: text("text").notNull(),
+    text: mediumtext("text").notNull(),
     sourceLocator: varchar("source_locator", { length: 255 }),
     editorialStatus: varchar("editorial_status", { length: 20 }).notNull().default("draft"),
     updatedAt: timestamp("updated_at", { mode: "string", fsp: 3 }).notNull().defaultNow().onUpdateNow(),

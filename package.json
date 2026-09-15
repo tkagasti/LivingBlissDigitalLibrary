@@ -14,6 +14,7 @@
     "test:unit": "vitest run",
     "auth:cleanup": "node scripts/cleanup-auth.mjs",
     "db:gita:apply": "node scripts/apply-gita-corpus.mjs",
+    "db:gita:commentaries:apply": "node scripts/import-gita-classical-commentaries.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },
