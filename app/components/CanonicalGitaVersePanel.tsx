@@ -54,7 +54,6 @@ const copy = {
     noCommentary: "No approved commentary passage is linked to this shloka yet. This section is ready for a licensed text or reviewed summary with full attribution.",
     governance: "Commentary remains separate from the Sanskrit source and shows commentator, tradition, edition, rights and version details. Approved passages are stored and served by Living Bliss.",
     academicRecord: "Academic record", coursePosition: "Course position", storage: "Content storage", database: "Living Bliss database",
-    sourceCitation: "Source citation ↗", storedCitation: "Source citation stored with the edition record",
     reviewNote: "Sanskrit text, transliteration and source glosses are edition-labelled. Translation, Devanagari sandhi analysis and bhāṣya remain protected review layers.",
   },
   hi: {
@@ -72,7 +71,6 @@ const copy = {
     noCommentary: "इस श्लोक से अभी कोई अनुमोदित भाष्य जुड़ा नहीं है। यह भाग पूर्ण स्रोत-सन्दर्भ सहित अधिकृत पाठ या समीक्षित सार के लिए तैयार है।",
     governance: "भाष्य संस्कृत मूल से अलग रहता है और भाष्यकार, परम्परा, संस्करण, अधिकार तथा संस्करण-विवरण दिखाता है। अनुमोदित सामग्री Living Bliss द्वारा संग्रहित और प्रस्तुत की जाती है।",
     academicRecord: "शैक्षणिक अभिलेख", coursePosition: "पाठ्यक्रम स्थान", storage: "सामग्री संग्रह", database: "Living Bliss डेटाबेस",
-    sourceCitation: "स्रोत-सन्दर्भ ↗", storedCitation: "स्रोत-सन्दर्भ संस्करण अभिलेख में सुरक्षित है",
     reviewNote: "संस्कृत पाठ, लिप्यंतरण और स्रोत शब्दार्थ संस्करण सहित सुरक्षित हैं। अनुवाद, देवनागरी सन्धि-विच्छेद और भाष्य संरक्षित समीक्षा स्तर बने रहते हैं।",
   },
   or: {
@@ -90,7 +88,6 @@ const copy = {
     noCommentary: "ଏହି ଶ୍ଲୋକ ସହ ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ଅନୁମୋଦିତ ଭାଷ୍ୟ ସଂଯୁକ୍ତ ହୋଇନାହିଁ। ପୂର୍ଣ୍ଣ ଉତ୍ସ-ସନ୍ଦର୍ଭ ସହ ଅଧିକୃତ ପାଠ କିମ୍ବା ସମୀକ୍ଷିତ ସାରାଂଶ ପାଇଁ ଏହି ଭାଗ ପ୍ରସ୍ତୁତ।",
     governance: "ଭାଷ୍ୟ ସଂସ୍କୃତ ମୂଳ ପାଠରୁ ପୃଥକ ରହେ ଏବଂ ଭାଷ୍ୟକାର, ପରମ୍ପରା, ସଂସ୍କରଣ, ଅଧିକାର ଓ ସଂସ୍କରଣ ବିବରଣୀ ଦର୍ଶାଏ। ଅନୁମୋଦିତ ବିଷୟବସ୍ତୁ ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ଦ୍ୱାରା ସଂରକ୍ଷିତ ଓ ପରିବେଷିତ ହୁଏ।",
     academicRecord: "ଶିକ୍ଷାଗତ ଅଭିଲେଖ", coursePosition: "ପାଠ୍ୟକ୍ରମ ସ୍ଥାନ", storage: "ବିଷୟବସ୍ତୁ ସଂରକ୍ଷଣ", database: "ଲିଭିଙ୍ଗ ବ୍ଲିସ୍ ଡାଟାବେସ୍",
-    sourceCitation: "ଉତ୍ସ-ସନ୍ଦର୍ଭ ↗", storedCitation: "ଉତ୍ସ-ସନ୍ଦର୍ଭ ସଂସ୍କରଣ ଅଭିଲେଖରେ ସଂରକ୍ଷିତ",
     reviewNote: "ସଂସ୍କୃତ ପାଠ, ଲିପ୍ୟନ୍ତରଣ ଏବଂ ଉତ୍ସ ଶବ୍ଦାର୍ଥ ସଂସ୍କରଣ ସହ ସଂରକ୍ଷିତ। ଅନୁବାଦ, ଦେବନାଗରୀ ସନ୍ଧି-ବିଚ୍ଛେଦ ଓ ଭାଷ୍ୟ ସୁରକ୍ଷିତ ସମୀକ୍ଷା ସ୍ତର ଭାବେ ରହିଛି।",
   },
 } as const;
@@ -242,7 +239,6 @@ export default function CanonicalGitaVersePanel({ reference, devanagari, odia, t
           <div><span>{labels.academicRecord}</span><strong>{language === "or" ? "ଶ୍ରୀମଦ୍ଭଗବଦ୍‌ଗୀତା" : language === "hi" ? "श्रीमद्भगवद्गीता" : "Bhagavad Gita"} {localizeDigits(reference, language)}</strong></div>
           <div><span>{labels.coursePosition}</span><strong>{localizeDigits(order, language)} / {localizeDigits(totalVerses, language)}</strong></div>
           <div><span>{labels.storage}</span><strong>{labels.database}</strong></div>
-          <span>{labels.storedCitation}</span>
         </div>
         <p className="compact-review-note"><span aria-hidden="true">✓</span>{labels.reviewNote}</p>
       </div>
