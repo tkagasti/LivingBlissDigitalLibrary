@@ -213,6 +213,28 @@ const connection = await mysql.createConnection({
   connectTimeout: 15000,
 });
 
+const commentaryEditionIds = Object.values(commentators).map((definition) => definition.editionId);
+const [[existingCorpus]] = await connection.query(
+  `SELECT
+     COUNT(DISTINCT ce.id) AS editions,
+     COUNT(cp.id) AS passages,
+     COUNT(DISTINCT IF(ce.content_checksum IN (?, ?), ce.id, NULL)) AS checksum_matches
+   FROM commentary_editions ce
+   LEFT JOIN commentary_passages cp ON cp.commentary_edition_id = ce.id
+   WHERE ce.id IN (?)`,
+  [sourceChecksum, secondarySourceChecksum, commentaryEditionIds],
+);
+
+if (
+  Number(existingCorpus.editions) === commentaryEditionIds.length
+  && Number(existingCorpus.passages) === 8402
+  && Number(existingCorpus.checksum_matches) === commentaryEditionIds.length
+) {
+  console.log(JSON.stringify({ editions: commentaryEditionIds.length, passages: 8402, status: "already-current" }));
+  await connection.end();
+  process.exit(0);
+}
+
 try {
   const [[textColumn]] = await connection.query(
     `SELECT DATA_TYPE AS data_type
